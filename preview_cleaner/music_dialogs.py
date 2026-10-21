@@ -12,7 +12,7 @@ class WorkspaceDialog:
         self.window=tk.Toplevel(owner.window)
         self.window.title(title)
         self.window.geometry(geometry)
-        self.window.transient(owner.window)
+        self.window.transient(owner.window.winfo_toplevel())
         self.window.grab_set()
         self.closed=False
         self.status=tk.StringVar(self.window,'')

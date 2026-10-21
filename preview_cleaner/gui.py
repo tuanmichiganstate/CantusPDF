@@ -97,7 +97,7 @@ class CleanerWindow:
         tools.add_command(label="Split PDF…", command=lambda: self.open_page_tool('split'))
         menu.add_cascade(label="Tools", menu=tools)
         workspace = tk.Menu(menu, tearoff=False)
-        workspace.add_command(label="Prepare PDF", command=self.root.lift)
+        workspace.add_command(label="Prepare PDF", command=lambda: self.select_workspace("prepare"))
         workspace.add_command(label="PDF notes…", command=lambda: self.open_music('practice'))
         workspace.add_command(label="Service collection…", command=lambda: self.open_music('service'))
         workspace.add_separator()
@@ -106,7 +106,16 @@ class CleanerWindow:
         workspace.add_command(label="Current PDF → Collection…", command=lambda: self.handoff_music('service'))
         menu.add_cascade(label="Workspace", menu=workspace)
         self.root.configure(menu=menu)
-        header = ttk.Frame(self.root, padding=(22, 16))
+        self.workspaces = ttk.Notebook(self.root)
+        self.workspace_tabs = {}
+        for key, label in (("prepare", "Prepare PDF"), ("notes", "PDF notes"), ("collection", "Service collection")):
+            tab = ttk.Frame(self.workspaces)
+            self.workspace_tabs[key] = tab
+            self.workspaces.add(tab, text=label)
+        self.workspaces.pack(fill="both", expand=True)
+        prepare = self.workspace_tabs["prepare"]
+        self.workspaces.bind("<<NotebookTabChanged>>", self.workspace_changed)
+        header = ttk.Frame(prepare, padding=(22, 16))
         header.pack(fill="x")
         ttk.Label(header, text="Preview Cleaner", style="Title.TLabel").pack(side="left")
         self.save_button = ttk.Button(header, text="Save copy…", command=self.save, state="disabled", style="Primary.TButton")
@@ -114,13 +123,8 @@ class CleanerWindow:
         ttk.Button(header, text="Open PDF…", command=self.choose_file).pack(side="right", padx=10)
         ttk.Button(header, text="Batch…", width=7, command=self.open_batch).pack(side="right")
         ttk.Button(header, text="Help", width=5, command=lambda: show_help(self.root)).pack(side="right", padx=8)
-        navigation = ttk.Frame(self.root, padding=(22, 0, 22, 8))
-        navigation.pack(fill="x")
-        ttk.Button(navigation, text="Prepare PDF", command=self.root.lift).pack(side="left", padx=(0, 8))
-        ttk.Button(navigation, text="PDF notes", command=lambda: self.open_music('practice')).pack(side="left", padx=(0, 8))
-        ttk.Button(navigation, text="Service collection", command=lambda: self.open_music('service')).pack(side="left")
-        ttk.Separator(self.root).pack(fill="x")
-        body = ttk.Frame(self.root)
+        ttk.Separator(prepare).pack(fill="x")
+        body = ttk.Frame(prepare)
         self.body = body
         body.pack(fill="both", expand=True)
         sidebar_shell = ttk.Frame(body, width=306)
@@ -230,8 +234,8 @@ class CleanerWindow:
         scrollbar = ttk.Scrollbar(self.details_frame, command=self.log.yview)
         scrollbar.pack(side="right", fill="y")
         self.log.configure(yscrollcommand=scrollbar.set)
-        ttk.Separator(self.root).pack(fill="x")
-        footer = ttk.Frame(self.root, padding=(22, 12))
+        ttk.Separator(prepare).pack(fill="x")
+        footer = ttk.Frame(prepare, padding=(22, 12))
         footer.pack(fill="x")
         self.status_label = ttk.Label(footer, textvariable=self.status, wraplength=940)
         self.status_label.pack(side="left", fill="x", expand=True)
@@ -241,8 +245,11 @@ class CleanerWindow:
         self.cancel_button = ttk.Button(self.progress_row, text="Cancel", command=self.cancel_processing, state="disabled")
         self.cancel_button.pack(side="right")
         footer.bind("<Configure>", lambda event: self.status_label.configure(wraplength=max(400, event.width - 290)))
-        self.root.bind("<Command-o>", lambda event: self.choose_file())
-        self.root.bind("<Command-s>", lambda event: self.save())
+        for sequence in ("<Command-o>", "<Control-o>"):
+            self.root.bind(sequence, lambda event: self.workspace_shortcut("open"))
+        for sequence in ("<Command-s>", "<Control-s>"):
+            self.root.bind(sequence, lambda event: self.workspace_shortcut("save"))
+        self.root.bind("<Escape>", lambda event: self.workspace_shortcut("escape"))
         self.note("Open a PDF, choose your options, then analyze. Verification results appear here.")
         self.render()
 
@@ -352,11 +359,46 @@ class CleanerWindow:
         return bool(self.job or (self.batch_window and self.batch_window.running) or
                     any(window.job for window in self.tool_windows.values()))
 
+    def active_workspace(self):
+        selected = self.workspaces.select()
+        return next((key for key, tab in self.workspace_tabs.items() if str(tab) == selected), "prepare")
+
+    def select_workspace(self, key):
+        self.workspaces.select(self.workspace_tabs[key])
+        self.root.lift()
+        self.workspace_changed()
+
+    def workspace_changed(self, event=None):
+        key = self.active_workspace()
+        if key != "prepare" and key not in self.tool_windows:
+            self.tool_windows[key] = MusicWorkspace(self, "practice" if key == "notes" else "service")
+        self.refresh_workspace_title()
+
+    def refresh_workspace_title(self):
+        key = self.active_workspace()
+        work = self.tool_windows.get(key)
+        if work is not None:
+            title = work.title_var.get() or ("PDF notes" if key == "notes" else "Service collection")
+            marker = " *" if work.dirty or work.editing else ""
+            self.root.title(f"{title}{marker} — Preview Cleaner")
+        else:
+            self.root.title("Preview Cleaner")
+
+    def workspace_shortcut(self, action):
+        work = self.tool_windows.get(self.active_workspace())
+        if work is not None:
+            {"open": work.open_project, "save": work.save_project, "escape": work.stop_placing}[action]()
+        elif action == "open":
+            self.choose_file()
+        elif action == "save":
+            self.save()
+        return "break"
+
     def open_music(self, kind):
         key = 'notes' if kind == 'practice' else 'collection'
         if key not in self.tool_windows:
             self.tool_windows[key] = MusicWorkspace(self, kind)
-        self.tool_windows[key].window.lift()
+        self.select_workspace(key)
         return self.tool_windows[key]
 
     def handoff_music(self, kind):

@@ -133,3 +133,7 @@ Uses a keyboard-accessible Tk Canvas with bounded 12-page thumbnail groups and a
 scrolling inspector, rather than copying web-only UI or invented PDF capabilities.
 No deskew, measure recognition, Cleaned filter, aspect-ratio lock or fake size estimates.
 The existing quality comparison and actual file-size summary remain unchanged.
+
+## 0.18.0 — persistent workspace tabs
+
+The three main workspaces share a native Notebook in the main window. Notes and Collection initialize on first use and retain documents, selection, edits and processing when hidden. Their dirty indicators appear on tab labels. The root window owns keyboard shortcuts, routed to the selected workspace; dialogs remain owned by the root toplevel. Duplicate workspace navigation rows are removed.

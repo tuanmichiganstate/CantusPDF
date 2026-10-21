@@ -12,6 +12,7 @@ from test_assembly import source
 
 @pytest.fixture
 def app(window, monkeypatch):
+    window.root.deiconify()
     monkeypatch.setattr(music_workspace.messagebox, 'askyesnocancel', lambda *a, **k: False)
     return window
 
@@ -199,3 +200,37 @@ def test_project_opens_in_matching_workspace(app, tmp_path):
     settle(app, notes)
     assert notes.project_path == str(path)
     assert not collection.model['tracks']
+
+
+def test_workspace_tabs_preserve_documents_and_edits(app, tmp_path):
+    notes = app.open_music('practice')
+    path = open_pdf(app, notes, tmp_path)
+    notes.title_var.set('Practice annotations')
+    collection = app.open_music('service')
+    collection.add_paths([path])
+    settle(app, collection)
+    collection.title_var.set('Sunday Mass')
+    app.select_workspace('prepare')
+    assert app.active_workspace() == 'prepare'
+    assert app.open_music('practice') is notes
+    assert notes.title_var.get() == 'Practice annotations'
+    assert notes.track() and notes.editing
+    assert app.open_music('service') is collection
+    assert collection.title_var.get() == 'Sunday Mass'
+    assert collection.track() and collection.editing
+    assert notes.window.winfo_toplevel() is app.root
+    assert collection.window.winfo_toplevel() is app.root
+    assert len(app.workspaces.tabs()) == 3
+
+
+def test_workspace_shortcuts_follow_selected_tab(app, monkeypatch):
+    calls = []
+    monkeypatch.setattr(app, 'save', lambda: calls.append('prepare'))
+    notes = app.open_music('practice')
+    collection = app.open_music('service')
+    monkeypatch.setattr(notes, 'save_project', lambda: calls.append('notes'))
+    monkeypatch.setattr(collection, 'save_project', lambda: calls.append('collection'))
+    for key in ('prepare', 'notes', 'collection', 'notes'):
+        app.select_workspace(key)
+        assert app.workspace_shortcut('save') == 'break'
+    assert calls == ['prepare', 'notes', 'collection', 'notes']

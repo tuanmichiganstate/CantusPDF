@@ -20,10 +20,8 @@ class MusicWorkspace:
     def __init__(self, owner, kind):
         self.owner, self.kind = owner, kind
         self.key = 'notes' if kind == 'practice' else 'collection'
-        self.window = tk.Toplevel(owner.root)
-        self.window.geometry('1280x850')
-        self.window.minsize(1080, 750)
-        self.window.configure(menu=owner.root.cget('menu'))
+        self.window = ttk.Frame(owner.workspace_tabs[self.key])
+        self.window.pack(fill='both', expand=True)
         self.storage = TemporaryDirectory(prefix='preview-music-')
         self.session = self.storage.name
         self.model = new_set(kind)
@@ -58,10 +56,6 @@ class MusicWorkspace:
         for var in (self.title_var, self.song_title, self.section, self.pages_var, self.note_size, self.note_width, self.note_height, self.note_print):
             var.trace_add('write', self.edited)
         self.note_text.bind('<<Modified>>', self.text_edited)
-        self.window.protocol('WM_DELETE_WINDOW', self.close)
-        self.window.bind('<Command-s>', lambda e: self.save_project())
-        self.window.bind('<Control-s>', lambda e: self.save_project())
-        self.window.bind('<Escape>', lambda e: self.stop_placing())
         self.refresh_tracks()
 
     def build(self):
@@ -69,9 +63,6 @@ class MusicWorkspace:
         frame.pack(fill='both', expand=True)
         nav = ttk.Frame(frame)
         nav.pack(fill='x')
-        for label, action in [('Prepare PDF', self.owner.root.lift), ('PDF notes', lambda: self.owner.open_music('practice')), ('Service collection', lambda: self.owner.open_music('service'))]:
-            active = label == ('PDF notes' if self.kind == 'practice' else 'Service collection')
-            ttk.Button(nav, text=label, command=action, style='ActiveNav.TButton' if active else 'TButton').pack(side='left', padx=(0, 8))
         ttk.Button(nav, text='Help', command=self.help).pack(side='right')
         heading = ttk.Frame(frame)
         heading.pack(fill='x', pady=10)
@@ -292,7 +283,7 @@ class MusicWorkspace:
             'PDF notes can reopen annotations created by this app. Other annotations are preserved but not edited. Transpose is a text instruction, not automatic transposition of music.\n\n'
             'Organize / crop pages shows thumbnails for page order, keep/omit, rotation and reversible cropping. PNG/JPEG imports become PDF copies.\n\n'
             'Export layout adds cover, linked contents, odd-page song starts and numbering. Preview export checks the final layout. Flatten all annotations makes a separate print copy; keep your project for edits. Optimization never downsamples images.\n\n'
-            'Use Prepare PDF for cleaning/printable conversion, and Tools for standalone Join/Split. These workspaces do not perform those operations automatically.', parent=self.window)
+            'Use Prepare PDF for cleaning/printable conversion, and Tools for standalone Join/Split. These workspaces do not perform those operations automatically.', parent=self.window.winfo_toplevel())
 
     def track(self):
         if self.track_index is not None and 0 <= self.track_index < len(self.model['tracks']):
@@ -314,7 +305,8 @@ class MusicWorkspace:
     def update_title(self):
         title = 'PDF notes' if self.kind == 'practice' else 'Service collection'
         self.project_status.set('Unsaved changes' if self.dirty or self.editing else ('Project saved' if self.project_path else 'New project'))
-        self.window.title(f'{title}{" *" if self.dirty or self.editing else ""} — Preview Cleaner')
+        self.owner.workspaces.tab(self.owner.workspace_tabs[self.key], text=title + (" *" if self.dirty or self.editing else ""))
+        self.owner.refresh_workspace_title()
 
     def remember(self):
         self.history.append(deepcopy(self.model))
@@ -600,10 +592,10 @@ class MusicWorkspace:
 
     def choose_pdfs(self):
         if self.kind == 'practice':
-            path = filedialog.askopenfilename(parent=self.window, filetypes=[('PDF or images', '*.pdf *.png *.jpg *.jpeg'), ('PDF', '*.pdf'), ('Images', '*.png *.jpg *.jpeg')])
+            path = filedialog.askopenfilename(parent=self.window.winfo_toplevel(), filetypes=[('PDF or images', '*.pdf *.png *.jpg *.jpeg'), ('PDF', '*.pdf'), ('Images', '*.png *.jpg *.jpeg')])
             paths = [path] if path else []
         else:
-            paths = filedialog.askopenfilenames(parent=self.window, filetypes=[('PDF or images', '*.pdf *.png *.jpg *.jpeg'), ('PDF', '*.pdf'), ('Images', '*.png *.jpg *.jpeg')])
+            paths = filedialog.askopenfilenames(parent=self.window.winfo_toplevel(), filetypes=[('PDF or images', '*.pdf *.png *.jpg *.jpeg'), ('PDF', '*.pdf'), ('Images', '*.png *.jpg *.jpeg')])
         self.add_paths(paths)
 
     def add_paths(self, paths, confirmed=False):
@@ -628,7 +620,7 @@ class MusicWorkspace:
             self.status.set('Wait or cancel the current task first.')
             return
         if self.dirty or self.editing:
-            answer = messagebox.askyesnocancel('Save changes?', 'Save this editable project before continuing?', parent=self.window)
+            answer = messagebox.askyesnocancel('Save changes?', 'Save this editable project before continuing?', parent=self.window.winfo_toplevel())
             if answer is None:
                 return
             if answer:
@@ -652,7 +644,7 @@ class MusicWorkspace:
 
     def open_project(self, path=None):
         if path is None:
-            path = filedialog.askopenfilename(parent=self.window, filetypes=[('Music project', '*.pcset')])
+            path = filedialog.askopenfilename(parent=self.window.winfo_toplevel(), filetypes=[('Music project', '*.pcset')])
         if path:
             self.replace_guard(lambda: self.launch(dict(operation='library_open', path=str(Path(path).resolve()))))
 
@@ -664,7 +656,7 @@ class MusicWorkspace:
         if destination is None:
             destination = None if save_as else self.project_path
         if not destination:
-            destination = filedialog.asksaveasfilename(parent=self.window, title='Save editable project', initialfile='Music project.pcset', defaultextension='.pcset', filetypes=[('Music project', '*.pcset')], confirmoverwrite=False)
+            destination = filedialog.asksaveasfilename(parent=self.window.winfo_toplevel(), title='Save editable project', initialfile='Music project.pcset', defaultextension='.pcset', filetypes=[('Music project', '*.pcset')], confirmoverwrite=False)
         if not destination:
             return False
         expected = self.project_hash if self.project_path and Path(destination).resolve() == Path(self.project_path).resolve() else None
@@ -681,7 +673,7 @@ class MusicWorkspace:
             self.dialog.status.set('Preview and approve reduced image quality before exporting.')
             return
         if not destination:
-            destination = filedialog.asksaveasfilename(parent=self.window, title='Export PDF', initialfile='Music.pdf', defaultextension='.pdf', filetypes=[('PDF', '*.pdf')], confirmoverwrite=False)
+            destination = filedialog.asksaveasfilename(parent=self.window.winfo_toplevel(), title='Export PDF', initialfile='Music.pdf', defaultextension='.pdf', filetypes=[('PDF', '*.pdf')], confirmoverwrite=False)
         if destination:
             self.launch(dict(operation='library_export', model=self.model, destination=str(Path(destination).resolve())))
 
@@ -771,7 +763,7 @@ class MusicWorkspace:
                 self.schedule_render()
             self.status.set(f'{len(result["tracks"])} PDF(s) copied into project.' + (' ' + ' | '.join(result['errors']) if result['errors'] else ''))
             if result['errors']:
-                messagebox.showwarning('Some PDFs could not be added', '\n\n'.join(result['errors']), parent=self.window)
+                messagebox.showwarning('Some PDFs could not be added', '\n\n'.join(result['errors']), parent=self.window.winfo_toplevel())
         elif operation == 'library_open':
             if result['model']['kind'] != self.kind:
                 self.owner.open_music(result['model']['kind']).open_project(self.request['path'])

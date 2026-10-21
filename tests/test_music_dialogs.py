@@ -102,7 +102,7 @@ def test_explicit_keep_omit_can_restore_pages_without_reordering(app,tmp_path):
 
 def test_notes_inspector_focus_reveals_controls_at_minimum_size(app,tmp_path):
     work=app.open_music('practice');open_pdf(app,work,tmp_path)
-    work.window.geometry('1080x750');app.root.update()
+    app.root.geometry('1080x750');app.root.update()
     add_note(app,work)
     assert work.inspector_tabs.select()==str(work.notes_tab)
     assert not work.note_dimensions.winfo_manager()

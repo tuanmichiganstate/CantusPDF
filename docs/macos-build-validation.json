@@ -1,6 +1,6 @@
 {
-  "built_at_utc": "2026-10-21T16:03:42.354492+00:00",
-  "app_version": "0.17.0",
+  "built_at_utc": "2026-10-21T16:31:44.198662+00:00",
+  "app_version": "0.18.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
   "minimum_macos": "26.0",
@@ -9,10 +9,10 @@
   "dependency_lock": "requirements-build-macos.txt",
   "app": "dist/PreviewCleaner.app",
   "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 36066449,
-  "archive_sha256": "051a941a23dabb16a9849667e76ac5aeb1fee9d570473f847fc9027c1a0a811c",
+  "archive_bytes": 36073086,
+  "archive_sha256": "b722307febc26abdfaac6f68b191e614fea4b7c32f561d38d7b794d6365375db",
   "automated_tests": {
-    "passed": 211,
+    "passed": 213,
     "failed": 0,
     "warnings": 5
   },
@@ -570,5 +570,20 @@
       "CLI description"
     ],
     "validation": "tests/test_gui.py passed; rebuilt app; codesign deep strict verification passed"
+  },
+  "batch_column_sizing": {
+    "behavior": "Font-measured widths for PDF, Status and Saved copy; horizontal scrolling when contents exceed viewport",
+    "validation": "4 batch tests passed; rebuilt app; codesign deep strict passed"
+  },
+  "workspace_tabs_validation": {
+    "behavior": "Three persistent main tabs; independent models, edits and workers; active-tab keyboard shortcuts; dirty markers",
+    "tests": "213 full-suite tests passed; 9 workspace tests passed after final foreground-navigation adjustment",
+    "packaged_report": "/tmp/pc-tabs0180-final-diagnostic.json",
+    "packaged_passed": true,
+    "native_checks": [
+      "Visually inspected Prepare PDF, PDF notes, Service collection in one main window",
+      "Switched Notes and Collection through Workspace menu; no extra main workspace window"
+    ],
+    "signing": "ad-hoc codesign deep strict verified"
   }
 }

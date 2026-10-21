@@ -262,3 +262,7 @@ Space toggles Keep/Omit, R rotates, and Delete omits. Omitted cards show Restore
 Crop outlines show the retained area over the uncropped page, with project rotation
 applied. The right inspector edits the selection; exact margins remain collapsible.
 Apply counts changed pages, and Revert draft restores the state at dialog opening.
+
+### One-window workspaces (0.18.0)
+
+Prepare PDF, PDF notes, and Service collection are now persistent tabs in one main window. Switch freely without reopening documents or losing edits; each tab keeps its own project and worker. Open/Save shortcuts follow the selected tab. Crop, expanded previews, batch export and standalone Join/Split still use focused secondary windows.

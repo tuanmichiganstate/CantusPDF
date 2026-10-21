@@ -1,7 +1,7 @@
 """Batch export queue: one disposable worker and one input in memory at a time."""
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, simpledialog, ttk
+from tkinter import filedialog, font, simpledialog, ttk
 
 from tkinterdnd2 import COPY, DND_FILES, REFUSE_DROP
 
@@ -66,7 +66,7 @@ class BatchWindow:
         self.tree = ttk.Treeview(table, style="Batch.Treeview", columns=("file", "status", "output"), show="headings", selectmode="browse")
         for column, title, width in (("file", "PDF", 260), ("status", "Status", 330), ("output", "Saved copy", 260)):
             self.tree.heading(column, text=title)
-            self.tree.column(column, width=width, minwidth=100)
+            self.tree.column(column, width=width, minwidth=100, stretch=column == "file")
         for tag, color in (("saved", "#0b636d"), ("failed", "#9b3131"), ("warning", "#8a5a00")):
             self.tree.tag_configure(tag, foreground=color)
         scroll = ttk.Scrollbar(table, orient="vertical", command=self.tree.yview)
@@ -111,6 +111,7 @@ class BatchWindow:
             row = dict(source=path, state="Queued" if valid else "Failed: not a PDF file", output="")
             row['id'] = self.tree.insert('', 'end', values=(path.name, row['state'], ''))
             self.rows.append(row)
+        self.fit_columns()
         self.count.set(f"{len(self.rows)} PDFs")
         if self.rows:
             self.empty.place_forget()
@@ -140,6 +141,7 @@ class BatchWindow:
             for row in self.rows:
                 self.tree.delete(row['id'])
             self.rows.clear()
+            self.fit_columns()
             self.count.set("0 PDFs")
             self.empty.place(relx=.5, rely=.5, anchor="center")
             self.start_button.configure(text="Export all…")
@@ -152,7 +154,20 @@ class BatchWindow:
         row.update(state=state, output=str(output))
         tag = 'failed' if state.startswith('Failed') else 'warning' if 'unsupported' in state or state.startswith(('Skipped', 'Cancelled')) else 'saved' if output else ''
         self.tree.item(row['id'], values=(row['source'].name, state, str(output)), tags=(tag,) if tag else ())
+        self.fit_columns()
         self.show_details()
+
+    def fit_columns(self):
+        """Keep every cell readable; overflow uses the horizontal scrollbar."""
+        style = ttk.Style(self.window)
+        body_font = font.Font(self.window, font=style.lookup("Batch.Treeview", "font") or "TkDefaultFont")
+        heading_font = font.Font(self.window, font=style.lookup("Treeview.Heading", "font") or "TkHeadingFont")
+        for index, column in enumerate(("file", "status", "output")):
+            width = heading_font.measure(self.tree.heading(column, "text")) + 28
+            for row in self.rows:
+                values = (row["source"].name, row["state"], row["output"])
+                width = max(width, body_font.measure(str(values[index])) + 28)
+            self.tree.column(column, width=width, minwidth=width)
 
     def toggle_inspector(self):
         if self.inspector is not None:
