@@ -216,9 +216,8 @@ def test_long_sidebar_content_scrolls_without_clipping_actions(window, tmp_path)
     window.root.geometry('1000x780')
     window.load_path(source)
     window.root.update()
-    note = window.authorization_note
-    assert note.winfo_height() >= note.winfo_reqheight()
-    assert note.winfo_rooty() + note.winfo_height() <= window.root.winfo_rooty() + window.root.winfo_height()
+    button = window.process_button
+    assert button.winfo_rooty() + button.winfo_height() <= window.root.winfo_rooty() + window.root.winfo_height()
     assert window.process_button.winfo_height() >= window.process_button.winfo_reqheight()
     assert window.sidebar_content.winfo_height() > window.sidebar_canvas.winfo_height()
     window.sidebar_canvas.yview_moveto(1)

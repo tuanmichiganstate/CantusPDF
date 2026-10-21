@@ -9,7 +9,7 @@ from .core import CleanerError, PasswordNeeded, analyze, clean, read_pdf, save_n
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Local PDF text-overlay cleaner. Only edit documents you are authorized to modify.")
+    parser = argparse.ArgumentParser(description="Local PDF text-overlay cleaner.")
     parser.add_argument("input", nargs="?", type=Path, help="Input PDF; omit to open the desktop UI")
     parser.add_argument("-o", "--output", type=Path, help="New output PDF path; never overwrite an existing file")
     parser.add_argument("--text", default="Preview", help="Target text, case-insensitive; default Preview")

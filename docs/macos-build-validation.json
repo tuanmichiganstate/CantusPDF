@@ -1,5 +1,5 @@
 {
-  "built_at_utc": "2026-10-21T15:35:54.526757+00:00",
+  "built_at_utc": "2026-10-21T16:03:42.354492+00:00",
   "app_version": "0.17.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
@@ -9,8 +9,8 @@
   "dependency_lock": "requirements-build-macos.txt",
   "app": "dist/PreviewCleaner.app",
   "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 36066934,
-  "archive_sha256": "31504686f98c7837c71256f3cb4d0a4ece7e22286bb5101ba2bcb5a9fc8aae1e",
+  "archive_bytes": 36066449,
+  "archive_sha256": "051a941a23dabb16a9849667e76ac5aeb1fee9d570473f847fc9027c1a0a811c",
   "automated_tests": {
     "passed": 211,
     "failed": 0,
@@ -562,5 +562,13 @@
       "Native pointer automation did not reliably select cards; drag gestures covered by Tk event tests, not a new manual acceptance test."
     ],
     "omitted_thumbnail_fix": "Removed macOS opaque stipple overlay; retain thumbnail with omitted label and dashed card border."
+  },
+  "authorization_label_removal": {
+    "removed_from": [
+      "main sidebar",
+      "About/export help",
+      "CLI description"
+    ],
+    "validation": "tests/test_gui.py passed; rebuilt app; codesign deep strict verification passed"
   }
 }

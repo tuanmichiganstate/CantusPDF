@@ -126,14 +126,12 @@ class CleanerWindow:
         sidebar_shell = ttk.Frame(body, width=306)
         sidebar_shell.pack(side="left", fill="y")
         sidebar_shell.pack_propagate(False)
-        # Reserve the action and complete authorization note before allocating the
-        # scrollable options area. Long filenames/security messages cannot clip them.
+        # Reserve the action before allocating the
+        # scrollable options area. Long filenames/security messages cannot clip it.
         sidebar_footer = ttk.Frame(sidebar_shell, padding=(20, 12, 20, 16))
         sidebar_footer.pack(side="bottom", fill="x")
         self.process_button = ttk.Button(sidebar_footer, text="Preview changes", command=self.process, state="disabled", style="Primary.TButton")
         self.process_button.pack(fill="x")
-        self.authorization_note = ttk.Label(sidebar_footer, text="Authorized documents only.", style="Muted.TLabel", wraplength=266)
-        self.authorization_note.pack(fill="x", pady=(10, 0))
         sidebar_viewport = ttk.Frame(sidebar_shell)
         sidebar_viewport.pack(fill="both", expand=True)
         self.sidebar_canvas = tk.Canvas(sidebar_viewport, background=colors["surface"], highlightthickness=0, width=1)

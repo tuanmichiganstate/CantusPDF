@@ -8,7 +8,7 @@ EXPORT_HELP = (
     "Only supported, separate text overlays are removed. Scans, images and unsupported marks stay unchanged. "
     "Review the output before use. Signed PDFs cannot be edited.\n\n"
     "Multiple PDFs open a batch queue. Batch exports verified copies directly; use single-file mode to compare before saving.\n\n"
-    "Only process documents you own or are authorized to modify. Processing stays on this Mac."
+    "Processing stays on this Mac."
 )
 
 
