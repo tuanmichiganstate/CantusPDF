@@ -152,7 +152,7 @@ class MusicWorkspace:
             field.pack(fill='x')
             self.fields.append(field)
         ttk.Label(editor, text='Liturgical part').pack(anchor='w', pady=(6, 2))
-        self.section_field = ttk.Combobox(editor, textvariable=self.section, values=('', 'Nhập lễ', 'Đáp ca', 'Alleluia', 'Dâng lễ', 'Hiệp lễ', 'Kết lễ'))
+        self.section_field = ttk.Combobox(editor, textvariable=self.section, values=('', 'Entrance', 'Responsorial Psalm', 'Alleluia', 'Offertory', 'Communion', 'Recessional'))
         self.section_field.pack(fill='x')
         self.fields.append(self.section_field)
         ttk.Button(editor, text='Organize / crop pages…', command=self.organize).pack(fill='x', pady=6)
