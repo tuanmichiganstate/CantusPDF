@@ -187,6 +187,9 @@ def run(report_path):
                         organizer.tree.selection_set('0')
                         organizer.rotate()
                         wait_tool(music)
+                        organizer.auto_crop()
+                        wait_tool(music)
+                        assert organizer.track.get('page_edits', {}).get('0', {}).get('crop')
                         organizer.apply()
                         music.model['export_options'] = dict(cover=True, contents=True, odd_starts=True, flatten=True, optimize=True)
                         layout_path = Path(folder) / 'Print layout.pdf'
@@ -204,6 +207,21 @@ def run(report_path):
                         wait_tool(music)
                         assert len(music.model['tracks']) == 3, music.status.get()
                         report['checks'].append('page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers')
+                        music.export_layout()
+                        music.dialog.vars['image_quality'].set('150 dpi · smaller file')
+                        music.dialog.preview()
+                        wait_tool(music)
+                        assert music.dialog.image, music.status.get()
+                        music.dialog.original.set(True)
+                        music.dialog.render()
+                        wait_tool(music)
+                        music.dialog.approve()
+                        wait_tool(music)
+                        reduced_path = Path(folder) / 'Reduced copy.pdf'
+                        music.export(reduced_path)
+                        wait_tool(music)
+                        assert reduced_path.exists(), music.status.get()
+                        report['checks'].append('automatic crop and reviewed reduced-image export with original-quality comparison through packaged workers')
 
                     finally:
                         music.close(discard=True)

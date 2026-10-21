@@ -1,4 +1,4 @@
-# Coding-agent handoff — Preview Cleaner 0.13.0
+# Coding-agent handoff — Preview Cleaner 0.15.0
 
 ## Objective
 
@@ -6,7 +6,7 @@ Turn the supplied working source prototype into a reliable local macOS/Windows d
 
 ## Implemented baseline
 
-`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `gui.py` provides drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize Tk in worker.py. `__main__.py` is the CLI. The suite includes 195 automated cases and a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
+`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `gui.py` provides drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize Tk in worker.py. `__main__.py` is the CLI. The suite includes 207 automated cases and a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
 
 The reference sample is a 12-page PDF whose page wrapper separately invokes the score Form XObject, draws a 150-pt diagonal `Preview` text object, then draws its edition footer. Only the target text-show operand is changed. Do not remove the entire page stream, Form XObject, font resource, gray content, or watermark bounding rectangle.
 
@@ -76,3 +76,20 @@ Project Save checks the previously loaded hash before atomic replacement; Save A
 Project v2 records `page_edits` (original displayed normalized crop edges plus clockwise rotation) and `export_options`; v1 is upgraded on load. Note rectangles remain in original displayed normalized space, with optional relative text rotation. Map through crop/rotation for editor interaction. PNG/JPEG headers are checked before decoding for the 40 MP limit; conversion runs in the worker. PyMuPDF 1.28.2 image_profile has a bytes-wrapper error, so bounded standard-header parsing avoids relying on it or adding Pillow.
 
 Numbering refuses nonblank target regions instead of covering score content. Contents destinations always reference physical PDF pages. Flattening is an explicit print-copy option for all annotations; private notes remain excluded. Clean-Mac/signing and actual native Finder/row/note-drag acceptance remain separate.
+
+### 0.14.0 Stitch UI refinement
+Song/Notes inspector tabs share existing model/edit handlers. Note box dimensions are collapsed; focus reveals fields inside each independent scroll panel. Selected/placed notes switch to Notes. Secondary Save As/Reveal actions live under More. ExportDialog groups existing options with contextual disabled numbering fields; disabled invalid drafts must not block unrelated exports. Its summary uses layout_plan without PDF work. Page organizer has explicit Keep/Omit plus keyboard alternatives; omission remains reversible. No PDF processing semantics changed. See UI_DESIGN.md for Stitch provenance and excluded invented features.
+
+
+### 0.15.0 visual crop and reviewed image reduction
+`library_crop_page` renders original displayed coordinates, ignoring saved geometry;
+`library_auto_crop` detects nonwhite pixels at bounded resolution, includes private
+notes, adds 12 pt padding and returns draft rectangles. Blank/tiny-content pages
+remain full-size. CropEditor commits only to PageOrganizer's draft; project changes
+still require Apply pages. Downward row drag now uses the target's original index.
+`image_quality` defaults to Original. Explicit 300/150 dpi presets use rewrite_images
+in workers, skip bitonal scans, preserve vector/text and do not modify stored assets.
+Final preview keeps original-quality and output files for comparison, sizes and zoom.
+The UI requires approval of the exact model before reduced-quality export; review
+is ephemeral and invalidated by any model change. Serialization verification compares
+to the deliberately reduced document, not pixel equality with the original scan.

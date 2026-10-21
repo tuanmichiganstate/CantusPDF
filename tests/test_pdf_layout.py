@@ -177,3 +177,65 @@ def test_flatten_foreign_comments_preserves_appearance(tmp_path):
     with pymupdf.open(stream=editable,filetype='pdf') as a,pymupdf.open(stream=flattened,filetype='pdf') as b:
         assert list(a[0].annots()) and not list(b[0].annots())
         assert a[0].get_pixmap().digest==b[0].get_pixmap().digest
+
+@pytest.mark.parametrize('rotation',[0,90,180,270])
+def test_auto_crop_original_coordinates_and_immutable_source(tmp_path,rotation):
+    model,session,path=project(tmp_path,rotation)
+    before=path.read_bytes()
+    track=model['tracks'][0]
+    track['page_edits']={'0':dict(crop=[.1,.1,.9,.9],rotation=90)}
+    result=run_library(dict(operation='library_auto_crop',model=model,session=str(session),track=0,pages=[0,1]),tmp_path,lambda _:None)
+    for crop in result['crops'].values():
+        assert 0<crop[0]<crop[2]<1 and 0<crop[1]<crop[3]<1
+    track['page_edits']={'0':dict(crop=result['crops']['0'])}
+    with prepare_track(track,session) as doc:
+        assert 'Score 1' in doc[0].get_text()
+        assert len(doc[0].get_drawings())==20
+    assert path.read_bytes()==before
+
+
+def test_auto_crop_blank_and_faint_edge_content(tmp_path):
+    session=tmp_path/'assets';session.mkdir()
+    path=tmp_path/'Faint.pdf'
+    with pymupdf.open() as doc:
+        doc.new_page(width=300,height=400)
+        page=doc.new_page(width=300,height=400)
+        page.draw_rect((2,2,298,398),color=(.95,.95,.95),width=2)
+        doc.save(path)
+    model=new_set();model['tracks']=[import_pdf(path,session)]
+    result=run_library(dict(operation='library_auto_crop',model=model,session=str(session),track=0,pages=[0,1]),tmp_path,lambda _:None)
+    assert result['crops']=={'0':[0,0,1,1],'1':[0,0,1,1]}
+
+
+def test_reduced_images_preserve_vectors_notes_and_preview_comparison(tmp_path):
+    session=tmp_path/'assets';session.mkdir()
+    path=tmp_path/'Scan.pdf'
+    with pymupdf.open() as source:
+        page=source.new_page(width=200,height=200)
+        page.draw_rect((0,0,200,200),color=None,fill=(.96,.94,.9))
+        for y in range(20,180,7):page.draw_line((10,y),(190,y),width=.4)
+        image=page.get_pixmap(matrix=pymupdf.Matrix(5,5)).tobytes('png')
+    with pymupdf.open() as doc:
+        page=doc.new_page(width=300,height=400)
+        page.insert_image((30,100,230,300),stream=image)
+        page.insert_text((30,30),'Vector text stays sharp')
+        page.draw_line((30,50),(250,50))
+        doc.save(path)
+    original=path.read_bytes()
+    model=new_set('practice');model['tracks']=[import_pdf(path,session)]
+    model['tracks'][0]['notes']=[dict(id='a',page=0,text='Sing softly',rect=[.1,.8,.8,.1],scope='song',size=14,print=True)]
+    base=export_pdf(model,session,lambda _:None)
+    model['export_options']=dict(image_quality='150 dpi · smaller file')
+    reduced=export_pdf(model,session,lambda _:None)
+    with pymupdf.open(stream=base,filetype='pdf') as a,pymupdf.open(stream=reduced,filetype='pdf') as b:
+        assert a[0].get_text()==b[0].get_text()
+        assert a[0].get_drawings()==b[0].get_drawings()
+        assert list(b[0].annots())[0].info['content']=='Sing softly'
+        assert b[0].get_images()[0][2]<a[0].get_images()[0][2]
+    result=run_library(dict(operation='library_preview',model=model,session=str(session)),tmp_path,lambda _:None)
+    assert result['size']==len(reduced) and result['original_size']==len(base)
+    for original_view in (True,False):
+        assert run_library(dict(operation='library_preview_page',model=model,session=str(session),page=0,original=original_view),tmp_path,lambda _:None)['image']
+    assert path.read_bytes()==original
+    model['export_options']['image_quality']='bad'
+    with pytest.raises(CleanerError):export_options(model)

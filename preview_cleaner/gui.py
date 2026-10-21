@@ -80,6 +80,12 @@ class CleanerWindow:
         style.configure("Primary.TButton", background=colors["teal"], foreground="white", bordercolor=colors["teal"])
         style.map("Primary.TButton", background=[("disabled", "#e1e7eb"), ("active", "#0b636d")],
                   foreground=[("disabled", "#7a8998"), ("!disabled", "white")])
+        style.configure("Quiet.TButton", padding=(8, 5))
+        style.configure("ActiveNav.TButton", background="#dceff0", foreground=colors["teal"], bordercolor="#a5cdd1", padding=(12, 8))
+        style.map("ActiveNav.TButton", background=[("active", "#cce5e8")])
+        style.configure("TNotebook", background=colors["surface"], borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(16, 9))
+        style.map("TNotebook.Tab", background=[("selected", "white")], foreground=[("selected", colors["teal"])])
         style.configure("TCheckbutton", background=colors["surface"], padding=(0, 4))
         style.map("TCheckbutton", background=[("active", colors["surface"])])
         style.configure("TEntry", padding=8, fieldbackground="white", bordercolor=colors["line"])

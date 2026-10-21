@@ -72,3 +72,95 @@ def test_note_mapping_after_rotation_and_crop(app,tmp_path):
     assert work.note()['rect']!=original
     work.export(tmp_path/'Rotated.pdf');settle(app,work)
     assert (tmp_path/'Rotated.pdf').exists()
+
+
+def test_export_numbering_is_contextual_and_disabled_draft_does_not_block(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.export_layout();dialog=work.dialog
+    assert all(str(control['state'])=='disabled' for control in dialog.number_controls)
+    dialog.vars['number_start'].set('not a number')
+    assert dialog.values()[0]['export_options']['number_start']==1
+    dialog.vars['numbers'].set(True)
+    assert all(str(control['state'])!='disabled' for control in dialog.number_controls)
+    assert dialog.apply(close=False) is False
+    dialog.vars['number_start'].set('5')
+    dialog.vars['cover'].set(True)
+    assert '4 pages' in dialog.summary.get()
+    assert dialog.apply(close=False)
+    dialog.close();settle(app,work)
+
+
+def test_explicit_keep_omit_can_restore_pages_without_reordering(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.organize();dialog=work.dialog;settle(app,work)
+    dialog.tree.selection_set('1');dialog.set_kept(False)
+    assert dialog.track['pages']==[0,2]
+    dialog.set_kept(True)
+    assert dialog.track['pages']==[0,1,2]
+    dialog.close();settle(app,work)
+
+
+def test_notes_inspector_focus_reveals_controls_at_minimum_size(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.window.geometry('1080x750');app.root.update()
+    add_note(app,work)
+    assert work.inspector_tabs.select()==str(work.notes_tab)
+    assert not work.note_dimensions.winfo_manager()
+    work.toggle_note_dimensions();app.root.update()
+    work.apply_note_button.focus_force();app.root.update()
+    canvas,_=work.inspector_scrolls[1]
+    assert work.apply_note_button.winfo_rooty()>=canvas.winfo_rooty()
+    assert work.apply_note_button.winfo_rooty()+work.apply_note_button.winfo_height()<=canvas.winfo_rooty()+canvas.winfo_height()+2
+    work.toggle_note_dimensions()
+    assert not work.note_dimensions.winfo_manager()
+
+
+def test_draw_crop_cancel_apply_and_auto_crop(app,tmp_path):
+    from preview_cleaner.music_dialogs import CropEditor
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.organize();dialog=work.dialog;settle(app,work)
+    dialog.tree.selection_set('0','1')
+    # Use the same original-page response as the worker-backed draw action.
+    from preview_cleaner.music_library import run_library
+    result=run_library(dict(operation='library_crop_page',model=dialog.model,session=work.session,track=0,page=0),tmp_path,lambda _:None)
+    editor=CropEditor(dialog,[0,1],result)
+    editor.begin(SimpleNamespace(x=20,y=20));editor.motion(SimpleNamespace(x=200,y=250))
+    editor.close()
+    assert not dialog.track.get('page_edits')
+    editor=CropEditor(dialog,[0,1],result)
+    editor.crop=[.1,.1,.9,.9];editor.apply();settle(app,work)
+    assert dialog.track['page_edits']['0']['crop']==[.1,.1,.9,.9]
+    assert dialog.track['page_edits']['1']['crop']==[.1,.1,.9,.9]
+    dialog.auto_crop();settle(app,work)
+    assert dialog.track['page_edits']['0']['crop']!=[.1,.1,.9,.9]
+    dialog.close();settle(app,work)
+    assert not work.track().get('page_edits')
+
+
+def test_downward_drag_reaches_target_position(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.organize();dialog=work.dialog;settle(app,work)
+    app.root.update()
+    dialog.drag_start='0'
+    box=dialog.tree.bbox('1')
+    dialog.drag_end(SimpleNamespace(y=box[1]+box[3]//2))
+    assert dialog.track['pages']==[1,0,2]
+    dialog.close();settle(app,work)
+
+
+def test_reduced_export_requires_review_and_changes_invalidate_it(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.model['export_options']={'image_quality':'150 dpi · smaller file'}
+    work.export(tmp_path/'Unreviewed.pdf')
+    assert isinstance(work.dialog,ExportDialog) and not (tmp_path/'Unreviewed.pdf').exists()
+    work.dialog.preview();settle(app,work)
+    preview=work.dialog
+    assert isinstance(preview,ExportPreview)
+    preview.original.set(True);preview.render();settle(app,work)
+    preview.approve();settle(app,work)
+    work.export(tmp_path/'Approved.pdf');settle(app,work)
+    assert (tmp_path/'Approved.pdf').exists()
+    work.model['title']='Changed'
+    work.export(tmp_path/'Changed.pdf')
+    assert isinstance(work.dialog,ExportDialog) and not (tmp_path/'Changed.pdf').exists()
+    work.dialog.close();settle(app,work)

@@ -1,6 +1,6 @@
 {
-  "built_at_utc": "2026-10-21T10:07:52.476937+00:00",
-  "app_version": "0.13.0",
+  "built_at_utc": "2026-10-21T15:09:25.761500+00:00",
+  "app_version": "0.15.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
   "minimum_macos": "26.0",
@@ -9,10 +9,10 @@
   "dependency_lock": "requirements-build-macos.txt",
   "app": "dist/PreviewCleaner.app",
   "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 36043901,
-  "archive_sha256": "9e7f4dbb81b90fcb601a3425a38945f241bf93c7199dbbf81be03cff9428f844",
+  "archive_bytes": 36055725,
+  "archive_sha256": "087ebbf7a0bc6ba77776d69c227b85cdecc693e867fd0e1b244c0f46dbb4c33d",
   "automated_tests": {
-    "passed": 195,
+    "passed": 207,
     "failed": 0,
     "warnings": 5
   },
@@ -374,6 +374,119 @@
       "Actual Finder image-drop and native row/note-drag gestures",
       "Physical duplex printing",
       "Developer ID signing/notarization and separate clean-Mac acceptance deferred as previously agreed"
+    ]
+  },
+  "stitch_music_review": {
+    "project": "https://stitch.withgoogle.com/projects/5733852018629027011",
+    "screen": "c0347b25a0a449a98764880def268ee5",
+    "packaged_self_test": {
+      "app_version": "0.14.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "portable music project and editable Vietnamese PDF annotations through packaged workers",
+        "page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "targeted_ui_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "native_checks": [
+      "Synthetic collection opened through native chooser",
+      "Song and Notes tabs and collapsed note dimensions inspected",
+      "Grouped export layout inspected",
+      "Final note inputs use readable light colors and Open project label fits"
+    ],
+    "adopted": [
+      "Compact navigation and toolbar",
+      "Song and Notes inspector tabs with scrolling",
+      "Save status and More menu",
+      "Contextual export tabs and preview action",
+      "Explicit Keep and Omit actions with keyboard shortcuts"
+    ]
+  },
+  "crop_compression_validation": {
+    "packaged_self_test": {
+      "app_version": "0.15.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "portable music project and editable Vietnamese PDF annotations through packaged workers",
+        "page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers",
+        "automatic crop and reviewed reduced-image export with original-quality comparison through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "final_ui_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "native_checks": [
+      "Packaged organizer with new crop controls visually inspected",
+      "User confirmed native Page 1 to Page 2 drag reorder works",
+      "User confirmed Draw crop pointer rectangle and Use crop work"
+    ],
+    "automated_checks": [
+      "All four original rotations and preexisting crop coordinates",
+      "Blank page and faint edge preservation",
+      "Crop editor cancel/apply and multi-page draft isolation",
+      "Downward drag target position",
+      "Reduced scan dimensions with unchanged vector text, drawings and editable notes",
+      "Original/output preview files and sizes",
+      "Quality review gate and invalidation after model edits"
+    ],
+    "limitations": [
+      "Automatic white-margin detection is a bounded raster heuristic; review the proposed crop",
+      "Bitonal images are not downsampled",
+      "Reduced-quality exports may be larger for some PDFs; preview shows both sizes"
     ]
   }
 }

@@ -334,6 +334,11 @@ def export_pdf(model, session, send):
                 # Baking FreeText may change edge antialiasing very slightly.
                 if len(after) != len(before) or sum(abs(a-b) for a,b in zip(after,before)) / max(1,len(after)) > .5:
                     raise CleanerError(f'Page {index+1}: print-copy appearance verification failed.')
+        if options['image_quality'] != 'Original':
+            dpi = 300 if options['image_quality'].startswith('300') else 150
+            send(['progress', 'Reducing scan images', 0, 1])
+            result.rewrite_images(dpi_threshold=round(dpi*1.25), dpi_target=dpi,
+                quality=92 if dpi == 300 else 85, bitonal=False, set_to_gray=False)
         data = result.tobytes(garbage=3, deflate=True)
         if options['optimize']:
             smaller = result.tobytes(garbage=4, deflate=True, deflate_images=True, deflate_fonts=True, use_objstms=1)
@@ -413,6 +418,39 @@ def run_library(options, root, send):
         return dict(model=model, project_hash=fingerprint, outputs=[])
     model = options['model']
     validate_model(model)
+    if operation in ('library_crop_page', 'library_auto_crop'):
+        track = model['tracks'][options['track']]
+        # Work in original displayed coordinates, before project crop/rotation.
+        original = dict(track, page_edits={})
+        with prepare_track(original, session, private=True) as doc:
+            if operation == 'library_crop_page':
+                page = doc[options['page']]
+                scale = min(650/page.rect.width, 650/page.rect.height)
+                pix = page.get_pixmap(matrix=pymupdf.Matrix(scale,scale), alpha=False)
+                return dict(image=base64.b64encode(pix.tobytes('png')).decode(), outputs=[])
+            crops = {}
+            for i, index in enumerate(options['pages']):
+                page = doc[index]
+                scale = min(2, 1500/max(page.rect.width,page.rect.height))
+                pix = page.get_pixmap(matrix=pymupdf.Matrix(scale,scale), colorspace=pymupdf.csGRAY, alpha=False)
+                samples = pix.samples
+                left,top,right,bottom = pix.width,pix.height,-1,-1
+                for y in range(pix.height):
+                    row = samples[y*pix.stride:y*pix.stride+pix.width]
+                    hits = [x for x,value in enumerate(row) if value < 250]
+                    if hits:
+                        left=min(left,hits[0]);right=max(right,hits[-1]);top=min(top,y);bottom=y
+                if right < 0:
+                    crop = [0,0,1,1]
+                else:
+                    pad=max(2,round(12*scale))
+                    crop=[max(0,left-pad)/pix.width,max(0,top-pad)/pix.height,
+                          min(pix.width,right+pad+1)/pix.width,min(pix.height,bottom+pad+1)/pix.height]
+                    if crop[2]-crop[0]<.05 or crop[3]-crop[1]<.05:
+                        crop=[0,0,1,1]
+                crops[str(index)]=crop
+                send(['progress','Finding white margins',i+1,len(options['pages'])])
+            return dict(crops=crops, outputs=[])
     if operation == 'library_thumbnails':
         track = model['tracks'][options['track']]
         images = []
@@ -427,12 +465,17 @@ def run_library(options, root, send):
         data = export_pdf(model, session, send)
         path = Path(session) / 'export-preview.pdf'
         path.write_bytes(data)
+        baseline = data
+        if export_options(model)['image_quality'] != 'Original':
+            original = dict(model, export_options=dict(export_options(model), image_quality='Original'))
+            baseline = export_pdf(original, session, send)
+        (Path(session) / 'export-original.pdf').write_bytes(baseline)
         with pymupdf.open(stream=data, filetype='pdf') as doc:
-            return dict(pages=len(doc), outputs=[])
+            return dict(pages=len(doc), size=len(data), original_size=len(baseline), outputs=[])
     if operation == 'library_preview_page':
-        with pymupdf.open(Path(session) / 'export-preview.pdf') as doc:
+        with pymupdf.open(Path(session) / ('export-original.pdf' if options.get('original') else 'export-preview.pdf')) as doc:
             page=doc[options['page']]
-            scale=min(options.get('width',700)/page.rect.width, options.get('height',800)/page.rect.height,2)
+            scale=min(options.get('width',700)/page.rect.width, options.get('height',800)/page.rect.height,4)
             pix=page.get_pixmap(matrix=pymupdf.Matrix(scale,scale),alpha=False)
             return dict(image=base64.b64encode(pix.tobytes('png')).decode(), outputs=[])
     if operation == 'library_render':

@@ -214,3 +214,29 @@ Prepare's Workspace menu and Join/Split's **Organize / crop…** button open a s
 - Lossless size optimization (default on): compression and duplicate-object cleanup, with no image downsampling. If optimization would grow the output, the smaller serialization is kept. Some PDFs cannot shrink further.
 
 **Preview export** builds and displays the actual final layout before saving. Export options are saved in the project. Covers, contents and inserted blanks count toward the 300-page output limit. New projects use format version 2; existing version-1 projects open and upgrade, but older app versions cannot open version-2 projects.
+
+## Workspace readability (0.14.0)
+
+A fresh [Google Stitch review](https://stitch.withgoogle.com/projects/5733852018629027011) informed a more compact native interface. Active workspace navigation and New/Saved/Unsaved status identify context. The right inspector separates **Song** and **Notes**; selecting/placing a note switches to Notes. **Note box size** expands only when needed, and keyboard focus scrolls controls into view. Save As and Show in Finder are under **More…** beside Save project.
+
+Export layout groups settings into **Document**, **Page numbers**, and **Print options**, with live song/page/blank counts and a prominent **Preview PDF** action. Numbering inputs disable when numbering is off. Flattening consequences and private-note behavior remain visible in the relevant group. The page organizer distinguishes **Keep** and **Omit**, dims omitted entries, and supports Space to toggle, R to rotate, and Delete/Backspace to omit selected pages.
+
+
+### Crop and smaller sharing copies (0.15.0)
+
+In **Song → Organize pages**, select pages and choose **Draw crop…** to drag a
+rectangle on the uncropped original. The rectangle applies to the selected pages;
+Cancel discards it. **Detect white margins** proposes a separate crop for each
+selected page, preserving a 12 pt buffer around visible marks. Review thumbnails
+before **Apply pages**. Blank pages remain uncropped; faint marks and noisy scans
+can prevent margin detection. Reset restores the original crop and rotation.
+
+In **Export layout → Print options**, Original quality remains the default.
+Optional 300 dpi / 150 dpi presets resample high-resolution color/grayscale images
+and use JPEG quality 92 / 85; monochrome scans are preserved. Text and vector
+art are not rasterized. This can soften fine staff lines and may not make every
+PDF smaller. **Preview PDF** shows both sizes, an Original quality comparison,
+and scrollable Detail / Fine detail views. **Approve quality** is required before
+exporting a reduced-quality copy; any project/settings change requires review again.
+The project and source assets keep their original quality. Independent Clean,
+Join and Split exports retain their existing behavior.

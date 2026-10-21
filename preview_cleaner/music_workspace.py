@@ -52,6 +52,7 @@ class MusicWorkspace:
         self.note_size = tk.StringVar(self.window, '14')
         self.note_width = tk.StringVar(self.window, '50')
         self.note_height = tk.StringVar(self.window, '15')
+        self.project_status = tk.StringVar(self.window, 'New project')
         self.page_label = tk.StringVar(self.window, 'No PDF')
         self.build()
         for var in (self.title_var, self.song_title, self.section, self.pages_var, self.note_size, self.note_width, self.note_height, self.note_print):
@@ -69,17 +70,19 @@ class MusicWorkspace:
         nav = ttk.Frame(frame)
         nav.pack(fill='x')
         for label, action in [('Prepare PDF', self.owner.root.lift), ('PDF notes', lambda: self.owner.open_music('practice')), ('Service collection', lambda: self.owner.open_music('service'))]:
-            ttk.Button(nav, text=label, command=action).pack(side='left', padx=(0, 8))
+            active = label == ('PDF notes' if self.kind == 'practice' else 'Service collection')
+            ttk.Button(nav, text=label, command=action, style='ActiveNav.TButton' if active else 'TButton').pack(side='left', padx=(0, 8))
         ttk.Button(nav, text='Help', command=self.help).pack(side='right')
         heading = ttk.Frame(frame)
         heading.pack(fill='x', pady=10)
         ttk.Label(heading, text='PDF notes' if self.kind == 'practice' else 'Service collection', style='Title.TLabel').pack(side='left')
-        ttk.Label(heading, text='   Copies stay in this project · originals unchanged', style='Muted.TLabel').pack(side='left')
+        ttk.Label(heading, text='   Originals unchanged', style='Muted.TLabel').pack(side='left')
+        ttk.Label(heading, textvariable=self.project_status, style='Muted.TLabel').pack(side='right')
         tools = ttk.Frame(frame)
         tools.pack(fill='x', pady=(0, 10))
         self.buttons = []
         for label, action in [('New', self.new), ('Open project…', self.open_project), ('Open file…' if self.kind == 'practice' else 'Add files…', self.choose_pdfs), ('Undo', self.undo)]:
-            button = ttk.Button(tools, text=label, command=action)
+            button = ttk.Button(tools, text=label, command=action, style='Quiet.TButton', width=6 if label in ('New', 'Undo') else 14)
             button.pack(side='left', padx=(0, 6))
             self.buttons.append(button)
         ttk.Label(tools, text='Title').pack(side='left', padx=(12, 6))
@@ -93,10 +96,12 @@ class MusicWorkspace:
         self.progress.pack(side='bottom', fill='x', pady=(6, 0))
         self.save_button = ttk.Button(footer, text='Save project…', command=self.save_project)
         self.save_button.pack(side='left')
-        self.save_as = ttk.Button(footer, text='Save As…', command=lambda: self.save_project(save_as=True))
+        self.save_as = ttk.Menubutton(footer, text='More…', width=7)
+        project_menu = tk.Menu(self.save_as, tearoff=False)
+        project_menu.add_command(label='Save project as…', command=lambda: self.save_project(save_as=True))
+        project_menu.add_command(label='Show in Finder' if sys.platform == 'darwin' else 'Open folder', command=self.reveal)
+        self.save_as.configure(menu=project_menu)
         self.save_as.pack(side='left', padx=6)
-        self.reveal_button = ttk.Button(footer, text='Show in Finder' if sys.platform == 'darwin' else 'Open folder', command=self.reveal)
-        self.reveal_button.pack(side='left')
         self.export_button = ttk.Button(footer, text='Export PDF…', command=self.export, style='Primary.TButton')
         self.export_button.pack(side='right')
         ttk.Button(footer, text='Export layout…', command=self.export_layout).pack(side='right', padx=6)
@@ -130,16 +135,25 @@ class MusicWorkspace:
         right = ttk.Frame(body, width=290)
         right.pack(side='right', fill='y', padx=(12, 0))
         right.pack_propagate(False)
-        # The editor scrolls independently at small window heights.
-        scroll_canvas = tk.Canvas(right, highlightthickness=0, background='#f5f7fa', width=1)
-        scrollbar = ttk.Scrollbar(right, command=scroll_canvas.yview)
-        scrollbar.pack(side='right', fill='y')
-        scroll_canvas.pack(side='left', fill='both', expand=True)
-        scroll_canvas.configure(yscrollcommand=scrollbar.set)
-        editor = ttk.Frame(scroll_canvas)
-        editor_item = scroll_canvas.create_window(0, 0, window=editor, anchor='nw')
-        scroll_canvas.bind('<Configure>', lambda e: scroll_canvas.itemconfigure(editor_item, width=e.width))
-        editor.bind('<Configure>', lambda e: scroll_canvas.configure(scrollregion=scroll_canvas.bbox('all')))
+        self.inspector_tabs = ttk.Notebook(right)
+        self.inspector_tabs.pack(fill='both', expand=True)
+        self.inspector_scrolls = []
+        def tab(title):
+            panel = ttk.Frame(self.inspector_tabs)
+            self.inspector_tabs.add(panel, text=title)
+            canvas = tk.Canvas(panel, highlightthickness=0, background='#f5f7fa', width=1)
+            scrollbar = ttk.Scrollbar(panel, command=canvas.yview)
+            scrollbar.pack(side='right', fill='y')
+            canvas.pack(side='left', fill='both', expand=True)
+            canvas.configure(yscrollcommand=scrollbar.set)
+            content = ttk.Frame(canvas, padding=(5, 8, 5, 0))
+            item = canvas.create_window(0, 0, window=content, anchor='nw')
+            canvas.bind('<Configure>', lambda e: canvas.itemconfigure(item, width=e.width))
+            content.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+            self.inspector_scrolls.append((canvas, content))
+            return panel, content
+        self.song_tab, editor = tab('Song')
+        self.notes_tab, notes_editor = tab('Notes')
         self.fields = [self.title_entry]
         for label, variable in [('Song title', self.song_title), ('Keep pages (blank = all)', self.pages_var)]:
             ttk.Label(editor, text=label).pack(anchor='w', pady=(5, 2))
@@ -152,9 +166,9 @@ class MusicWorkspace:
         self.fields.append(self.section_field)
         ttk.Button(editor, text='Organize / crop pages…', command=self.organize).pack(fill='x', pady=6)
         ttk.Button(editor, text='Apply song / pages', command=self.apply_and_render).pack(fill='x', pady=8)
-        ttk.Separator(editor).pack(fill='x', pady=6)
-        ttk.Label(editor, text='NOTES', style='Section.TLabel').pack(anchor='w')
-        self.notes_list = tk.Listbox(editor, height=4, exportselection=False)
+        editor = notes_editor
+        ttk.Label(editor, text='PAGE NOTES', style='Section.TLabel').pack(anchor='w')
+        self.notes_list = tk.Listbox(editor, height=4, exportselection=False, background='white', foreground='#123a56', selectbackground='#0d7682', selectforeground='white', highlightbackground='#dce3ea', highlightcolor='#0d7682')
         self.notes_list.pack(fill='x', pady=5)
         self.notes_list.bind('<<ListboxSelect>>', self.select_note)
         note_actions = ttk.Frame(editor)
@@ -163,18 +177,24 @@ class MusicWorkspace:
         ttk.Button(note_actions, text='Delete', command=self.delete_note).pack(side='right')
         self.scope_label = ttk.Label(editor, text='', style='Muted.TLabel', wraplength=255)
         self.scope_label.pack(fill='x', pady=5)
-        self.note_text = tk.Text(editor, height=4, wrap='word', font=('Helvetica Neue', 12), undo=True)
+        self.note_text = tk.Text(editor, height=4, wrap='word', font=('Helvetica Neue', 12), undo=True, background='white', foreground='#123a56', insertbackground='#123a56', selectbackground='#0d7682', selectforeground='white', highlightbackground='#dce3ea', highlightcolor='#0d7682')
         self.note_text.pack(fill='x')
         self.print_check = ttk.Checkbutton(editor, text='Include in PDF / print', variable=self.note_print)
         self.print_check.pack(anchor='w', pady=5)
+        self.note_dimensions = ttk.Frame(editor)
+        self.dimensions_button = ttk.Button(editor, text='▸ Note box size', command=self.toggle_note_dimensions, style='Quiet.TButton')
+        self.dimensions_button.pack(fill='x', pady=4)
         for label, variable in [('Text size', self.note_size), ('Width (%)', self.note_width), ('Height (%)', self.note_height)]:
-            row = ttk.Frame(editor)
-            row.pack(fill='x', pady=2)
+            row = ttk.Frame(editor if variable is self.note_size else self.note_dimensions)
+            row.pack(fill='x', pady=2, **({'before': self.dimensions_button} if variable is self.note_size else {}))
             ttk.Label(row, text=label).pack(side='left')
             field = ttk.Entry(row, textvariable=variable, width=7)
             field.pack(side='right')
             self.fields.append(field)
-        ttk.Button(editor, text='Apply note', command=self.apply_and_render).pack(fill='x', pady=8)
+        self.apply_note_button = ttk.Button(editor, text='Apply note', command=self.apply_and_render)
+        self.apply_note_button.pack(fill='x', pady=8)
+        for canvas, content in self.inspector_scrolls:
+            self.bind_inspector_scroll(content, canvas)
 
         center = ttk.Frame(body)
         self.sidebars, self.center = (left, right), center
@@ -193,6 +213,35 @@ class MusicWorkspace:
         self.canvas.bind('<ButtonPress-1>', self.page_click)
         self.canvas.bind('<B1-Motion>', self.page_drag)
         self.canvas.bind('<ButtonRelease-1>', self.page_release)
+
+    def toggle_note_dimensions(self):
+        if self.note_dimensions.winfo_manager():
+            self.note_dimensions.pack_forget()
+            self.dimensions_button.configure(text='▸ Note box size')
+        else:
+            self.note_dimensions.pack(fill='x', before=self.apply_note_button)
+            self.dimensions_button.configure(text='▾ Note box size')
+
+    def bind_inspector_scroll(self, widget, canvas):
+        def wheel(event):
+            if event.delta:
+                canvas.yview_scroll(-1 if event.delta > 0 else 1, 'units')
+                return 'break'
+        def reveal(event):
+            self.window.update_idletasks()
+            content = next(content for current, content in self.inspector_scrolls if current == canvas)
+            height = max(1, content.winfo_height())
+            top = event.widget.winfo_rooty() - content.winfo_rooty()
+            bottom = top + event.widget.winfo_height()
+            visible_top = canvas.canvasy(0)
+            if top < visible_top:
+                canvas.yview_moveto(top / height)
+            elif bottom > visible_top + canvas.winfo_height():
+                canvas.yview_moveto((bottom - canvas.winfo_height()) / height)
+        widget.bind('<MouseWheel>', wheel, add='+')
+        widget.bind('<FocusIn>', reveal, add='+')
+        for child in widget.winfo_children():
+            self.bind_inspector_scroll(child, canvas)
 
     def open_dialog(self, dialog_type):
         if self.dialog:
@@ -264,6 +313,7 @@ class MusicWorkspace:
 
     def update_title(self):
         title = 'PDF notes' if self.kind == 'practice' else 'Service collection'
+        self.project_status.set('Unsaved changes' if self.dirty or self.editing else ('Project saved' if self.project_path else 'New project'))
         self.window.title(f'{title}{" *" if self.dirty or self.editing else ""} — Preview Cleaner')
 
     def remember(self):
@@ -385,6 +435,7 @@ class MusicWorkspace:
         identity = self.track()['notes'][selected[0]]['id']
         if identity == self.note_id or not self.apply_current():
             return
+        self.inspector_tabs.select(self.notes_tab)
         self.note_id = identity
         self.page = self.note()['page']
         self.load_fields()
@@ -438,6 +489,7 @@ class MusicWorkspace:
     def place_note(self):
         if not self.track() or not self.apply_current():
             return
+        self.inspector_tabs.select(self.notes_tab)
         self.placing = True
         self.canvas.configure(cursor='crosshair')
         self.status.set('Click the page to place a note. Esc cancels.')
@@ -468,6 +520,7 @@ class MusicWorkspace:
         for note in reversed(self.track()['notes']):
             x, y, w, h = map_rect(note['rect'], self.page_edit())
             if note['page'] == self.page and x <= point[0] <= x + w and y <= point[1] <= y + h:
+                self.inspector_tabs.select(self.notes_tab)
                 self.note_id = note['id']
                 self.load_fields()
                 self.drag = (point, [x,y,w,h])
@@ -622,6 +675,11 @@ class MusicWorkspace:
             self.finish()
         if not self.apply_current() or not self.model['tracks']:
             return
+        from .pdf_layout import export_options
+        if export_options(self.model)['image_quality'] != 'Original' and getattr(self,'quality_reviewed',None) != self.model:
+            self.export_layout()
+            self.dialog.status.set('Preview and approve reduced image quality before exporting.')
+            return
         if not destination:
             destination = filedialog.asksaveasfilename(parent=self.window, title='Export PDF', initialfile='Music.pdf', defaultextension='.pdf', filetypes=[('PDF', '*.pdf')], confirmoverwrite=False)
         if destination:
@@ -695,7 +753,7 @@ class MusicWorkspace:
             self.canvas.delete('all')
             self.canvas.create_image(x, y, anchor='nw', image=self.image)
             self.draw_note_outline()
-            self.status.set('Private notes stay in the project. Export includes only checked notes.')
+            self.status.set('Ready · Originals unchanged')
         elif operation == 'library_import':
             if result['tracks']:
                 candidate = deepcopy(self.model)

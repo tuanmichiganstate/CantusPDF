@@ -67,3 +67,32 @@ Export options are persistent project settings. Preview uses the same export pip
 PNG/JPEG input uses the same Open/Add/drop entry points. The editor retains immutable PDF snapshots, including converted image assets. Cropping is reversible in the project and is not redaction.
 
 Validation: 195 tests passed; packaged diagnostics passed. Native export-options dialog, final cover preview and populated organizer were visually inspected. Poppler-rendered cover, contents, annotated score and rotated/cropped page were reviewed. Actual Finder/row/note-drag gestures and physical duplex printing remain separate manual checks.
+
+## Google Stitch music-workspace review (0.14.0)
+Project: https://stitch.withgoogle.com/projects/5733852018629027011
+Screen: c0347b25a0a449a98764880def268ee5
+Design system: assets/9a6b82f6be2348f89eadf5b0abedab0f
+
+The brief described current capabilities and synthetic song/note content only. Stitch returned a three-pane desktop design with independent navigation, compact toolbars, explicit Save/Export hierarchy, contextual inspectors and grouped export settings. The screenshot foregrounded an export sheet; it was inspected using the Stitch download_file tool.
+
+Adopted in the native app: active navigation styling, compact secondary actions, visible saved/unsaved state, Song/Notes inspector tabs, automatic Notes selection, collapsible note dimensions, focus-revealing inspector scrolling, More menu for secondary project actions, grouped Document/Page numbers/Print options tabs, conditional numbering controls, live output counts and primary preview action. Page organizer uses explicit Keep/Omit actions, muted omitted rows and keyboard actions. Existing palette and system font retain native rendering and Vietnamese support.
+
+Stitch also invented composer/key fields, OCR, two-page spreads, binding gutters, font-embedding toggles, 300-DPI claims and automatic staff correction. Those were not adopted; the existing crop units, lossless serialization and editable-note behavior remain truthful. The bounded thumbnail table remains rather than introducing a new filmstrip interaction. Optional Stitch follow-up concepts: page-organizer filmstrip, dedicated notes design and dark mode.
+
+
+### 0.15.0 follow-up controls
+Page organizer now offers Draw crop and Detect white margins. Both edit the existing
+organizer draft; numeric margins and Reset remain available. Draw crop uses the full
+original page so an existing crop can be expanded again. Auto detection is conservative
+and user-reviewed, with no automatic publication. Keep/Omit and row dragging remain
+independent of crop.
+Print options adds Original / 300 dpi / 150 dpi quality presets. Reduced-image export
+requires a preview with file sizes, original/output toggle, scrollable detail views and
+explicit quality approval. The default remains original quality. No new cloud service
+or upload is involved.
+
+Validation: 207 tests passed; final UI subset 10 passed. Final frozen diagnostic
+passed including automatic crop and approved reduced-quality export/comparison.
+The user confirmed actual native page reorder drag and Draw crop → Use crop on
+the synthetic project. This closes organizer drag acceptance; unrelated Finder
+image-drop and note-drag checks remain separately tracked.

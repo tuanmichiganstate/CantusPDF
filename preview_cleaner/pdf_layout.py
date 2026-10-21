@@ -7,7 +7,7 @@ from .core import CleanerError, MAX_PAGES
 
 DEFAULT_EXPORT = dict(cover=False, contents=False, odd_starts=False, numbers=False,
                       number_start=1, number_from=1, number_position='Bottom center',
-                      number_margin=18, flatten=False, optimize=True)
+                      number_margin=18, flatten=False, optimize=True, image_quality="Original")
 
 
 def export_options(model):
@@ -22,6 +22,8 @@ def export_options(model):
             raise CleanerError('Page numbering values must be 1–9999.')
     if options['number_position'] not in ('Bottom center', 'Bottom right', 'Top center', 'Top right'):
         raise CleanerError('Invalid page number position.')
+    if options['image_quality'] not in ('Original', '300 dpi · high quality', '150 dpi · smaller file'):
+        raise CleanerError('Invalid image quality preset.')
     margin = options['number_margin']
     if type(margin) not in (int, float) or not math.isfinite(margin) or not 4 <= margin <= 100:
         raise CleanerError('Number inset must be 4–100 pt.')
