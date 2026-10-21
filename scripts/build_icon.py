@@ -8,7 +8,7 @@ root = Path(__file__).resolve().parents[1]
 with pymupdf.open(root / "assets/icon.svg") as svg:
     pdf_bytes = svg.convert_to_pdf()
 with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc, tempfile.TemporaryDirectory() as tmp:
-    iconset = Path(tmp) / "PreviewCleaner.iconset"
+    iconset = Path(tmp) / "CantusPDF.iconset"
     iconset.mkdir()
     for size in (16, 32, 128, 256, 512):
         for scale in (1, 2):
@@ -19,4 +19,4 @@ with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc, tempfile.TemporaryDi
             pix.save(iconset / name)
             if pixels == 1024:
                 pix.save(root / "assets/icon.png")
-    subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(root / "assets/PreviewCleaner.icns")], check=True)
+    subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(root / "assets/CantusPDF.icns")], check=True)

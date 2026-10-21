@@ -1,4 +1,4 @@
-# Preview Cleaner UI design
+# Cantus PDF UI design
 
 Design reference: [Google Stitch project](https://stitch.withgoogle.com/projects/1339150647637069109).
 
@@ -137,3 +137,7 @@ The existing quality comparison and actual file-size summary remain unchanged.
 ## 0.18.0 — persistent workspace tabs
 
 The three main workspaces share a native Notebook in the main window. Notes and Collection initialize on first use and retain documents, selection, edits and processing when hidden. Their dirty indicators appear on tab labels. The root window owns keyboard shortcuts, routed to the selected workspace; dialogs remain owned by the root toplevel. Duplicate workspace navigation rows are removed.
+
+## 0.19.0 — Cantus PDF
+
+Rename visible app identity, window titles, About title, new annotation authors and exported PDF creator metadata to Cantus PDF. Historical Stitch screen titles and existing document format identifiers stay unchanged.

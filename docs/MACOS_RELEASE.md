@@ -9,7 +9,7 @@ local development but required for the intended public distribution workflow.
 
 Quit the running app, then run `bash scripts/build_macos.sh`. This runs the
 regression suite, regenerates the icon, builds the app, verifies its signature,
-and creates `dist/PreviewCleaner-macOS-arm64.zip`.
+and creates `dist/CantusPDF-macOS-arm64.zip`.
 
 Without `MACOS_SIGN_IDENTITY`, PyInstaller applies an ad-hoc signature. That is
 not a Developer ID signature or Apple notarization.
@@ -19,14 +19,14 @@ not a Developer ID signature or Apple notarization.
 1. On your Mac, install your **Developer ID Application** certificate with its
    private key into Keychain. Check it with `security find-identity -v -p codesigning`.
 2. Create a notarytool Keychain profile locally using
-   `xcrun notarytool store-credentials PreviewCleaner`. Follow its interactive
+   `xcrun notarytool store-credentials CantusPDF`. Follow its interactive
    prompts with your own Apple Developer credentials. Do not put credentials in
    this repository or chat.
 3. Set the non-secret identity and profile names, then run:
 
    ```bash
    export MACOS_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)'
-   export NOTARY_PROFILE='PreviewCleaner'
+   export NOTARY_PROFILE='CantusPDF'
    bash scripts/notarize_macos.sh
    ```
 
@@ -45,7 +45,7 @@ Mac is only a relocation check, not clean-Mac validation.
 First run the built-in offline diagnostic (choose a new report filename):
 
 ```bash
-/Applications/PreviewCleaner.app/Contents/MacOS/PreviewCleaner --self-test "$HOME/Desktop/PreviewCleaner-check.json"
+"/Applications/Cantus PDF.app/Contents/MacOS/CantusPDF" --self-test "$HOME/Desktop/CantusPDF-check.json"
 ```
 
 The resulting JSON must contain `"passed": true`. This exercises native tkdnd

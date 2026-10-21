@@ -147,5 +147,5 @@ def add_page_numbers(doc, options):
         number=str(options['number_start']+index-(options['number_from']-1))
         annot=page.add_freetext_annot(visible*page.derotation_matrix,number,fontsize=10,
             fontname='Helv',text_color=(.07,.23,.34),align=2 if right else 1,rotate=page.rotation)
-        annot.set_info(title='Preview Cleaner',subject='PreviewCleanerPageNumber')
+        annot.set_info(title='Cantus PDF',subject='PreviewCleanerPageNumber')
         annot.set_flags(pymupdf.PDF_ANNOT_IS_PRINT)

@@ -16,8 +16,8 @@ BUILD_PYTHON="${BUILD_PYTHON:-python3}"
 .venv-build/bin/python -m pip install -r requirements-build-macos.txt
 .venv-build/bin/python -m pytest -q
 .venv-build/bin/python scripts/build_icon.py
-.venv-build/bin/python -m PyInstaller --clean --noconfirm PreviewCleaner.spec
-codesign --verify --deep --strict dist/PreviewCleaner.app
-ditto -c -k --sequesterRsrc --keepParent dist/PreviewCleaner.app dist/PreviewCleaner-macOS-arm64.zip
-echo "Built: dist/PreviewCleaner.app"
-echo "Archive: dist/PreviewCleaner-macOS-arm64.zip"
+.venv-build/bin/python -m PyInstaller --clean --noconfirm CantusPDF.spec
+codesign --verify --deep --strict "dist/Cantus PDF.app"
+ditto -c -k --sequesterRsrc --keepParent "dist/Cantus PDF.app" dist/CantusPDF-macOS-arm64.zip
+echo "Built: dist/Cantus PDF.app"
+echo "Archive: dist/CantusPDF-macOS-arm64.zip"

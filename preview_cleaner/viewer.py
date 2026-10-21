@@ -23,7 +23,7 @@ class PageViewer:
         self.closed = False
         self.maximize_on_open = fullscreen and sys.platform == "darwin"
         self.window = tk.Toplevel(owner.root)
-        self.window.title("Page viewer — Preview Cleaner")
+        self.window.title("Page viewer — Cantus PDF")
         self.window.geometry("1100x800")
         self.window.minsize(860, 500)
         toolbar = ttk.Frame(self.window, padding=12)
@@ -157,7 +157,7 @@ class PageViewer:
             self.source.set(0)
             document = self.owner.original
         self.source_heading.configure(text=("OUTPUT PREVIEW" if self.source.get() else "ORIGINAL PDF") + "  ·  " + self.owner.path.name)
-        self.window.title(("Output preview" if self.source.get() else "Original PDF") + " — Preview Cleaner")
+        self.window.title(("Output preview" if self.source.get() else "Original PDF") + " — Cantus PDF")
         notice, warning = result_notice(self.owner.result.report if self.owner.result else None, self.owner.page)
         self.notice.configure(text=notice if warning else "", background="#fff4d6" if warning else self.owner.colors["surface"])
         page = document[self.owner.page]

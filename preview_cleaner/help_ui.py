@@ -13,5 +13,5 @@ EXPORT_HELP = (
 
 
 def show_help(parent, security=None):
-    messagebox.showinfo("Export details" if security else "About Preview Cleaner",
+    messagebox.showinfo("Export details" if security else "About Cantus PDF",
                         (security + "\n\n" if security else "") + EXPORT_HELP, parent=parent)

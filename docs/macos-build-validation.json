@@ -1,16 +1,16 @@
 {
-  "built_at_utc": "2026-10-21T16:31:44.198662+00:00",
-  "app_version": "0.18.0",
+  "built_at_utc": "2026-10-21T16:50:45.493647+00:00",
+  "app_version": "0.19.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
   "minimum_macos": "26.0",
   "python": "3.12.14",
   "tcl_tk": "9.0.4",
   "dependency_lock": "requirements-build-macos.txt",
-  "app": "dist/PreviewCleaner.app",
-  "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 36073086,
-  "archive_sha256": "b722307febc26abdfaac6f68b191e614fea4b7c32f561d38d7b794d6365375db",
+  "app": "dist/Cantus PDF.app",
+  "archive": "dist/CantusPDF-macOS-arm64.zip",
+  "archive_bytes": 36063821,
+  "archive_sha256": "0bc38c538569105ba764de95655f5f24c36439fd4484ad5133a9828339c3256e",
   "automated_tests": {
     "passed": 213,
     "failed": 0,
@@ -585,5 +585,16 @@
       "Switched Notes and Collection through Workspace menu; no extra main workspace window"
     ],
     "signing": "ad-hoc codesign deep strict verified"
+  },
+  "cantus_pdf_rename": {
+    "display_name": "Cantus PDF",
+    "executable": "CantusPDF",
+    "spec": "CantusPDF.spec",
+    "compatibility": "Retained legacy bundle identifier, Python package, project format and annotation subjects",
+    "packaged_diagnostic": "/tmp/cantus0190-diagnostic.json",
+    "packaged_passed": true,
+    "native_check": "macOS app name, window title and application menu show Cantus PDF",
+    "repository_renamed": true,
+    "repository_url": "https://github.com/tuanmichiganstate/CantusPDF"
   }
 }

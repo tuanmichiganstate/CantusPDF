@@ -27,7 +27,7 @@ class BatchWindow:
     def __init__(self, owner):
         self.owner = owner
         self.window = tk.Toplevel(owner.root)
-        self.window.title("Batch PDF export — Preview Cleaner")
+        self.window.title("Batch PDF export — Cantus PDF")
         self.window.geometry("1000x650")
         self.window.minsize(760, 500)
         self.rows = []

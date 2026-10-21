@@ -24,7 +24,7 @@ from .ui_helpers import format_pdf_date, page_number, result_notice
 class CleanerWindow:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Preview Cleaner")
+        self.root.title("Cantus PDF")
         self.root.geometry("1280x850")
         self.root.minsize(1000, 780)
         self.path: Path | None = None
@@ -117,7 +117,7 @@ class CleanerWindow:
         self.workspaces.bind("<<NotebookTabChanged>>", self.workspace_changed)
         header = ttk.Frame(prepare, padding=(22, 16))
         header.pack(fill="x")
-        ttk.Label(header, text="Preview Cleaner", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text="Cantus PDF", style="Title.TLabel").pack(side="left")
         self.save_button = ttk.Button(header, text="Save copy…", command=self.save, state="disabled", style="Primary.TButton")
         self.save_button.pack(side="right")
         ttk.Button(header, text="Open PDF…", command=self.choose_file).pack(side="right", padx=10)
@@ -380,9 +380,9 @@ class CleanerWindow:
         if work is not None:
             title = work.title_var.get() or ("PDF notes" if key == "notes" else "Service collection")
             marker = " *" if work.dirty or work.editing else ""
-            self.root.title(f"{title}{marker} — Preview Cleaner")
+            self.root.title(f"{title}{marker} — Cantus PDF")
         else:
-            self.root.title("Preview Cleaner")
+            self.root.title("Cantus PDF")
 
     def workspace_shortcut(self, action):
         work = self.tool_windows.get(self.active_workspace())

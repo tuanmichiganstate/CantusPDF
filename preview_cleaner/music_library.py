@@ -143,7 +143,7 @@ def add_note(page, note):
                                    border_color=(.5, .5, .3), rotate=(page.rotation + note.get('rotation', 0)) % 360)
     details = {key: note[key] for key in ('id', 'scope', 'size', 'print')}
     details['rotation'] = note.get('rotation', 0)
-    annot.set_info(title='Preview Cleaner', content=note['text'], subject=NOTE_PREFIX + json.dumps(details))
+    annot.set_info(title='Cantus PDF', content=note['text'], subject=NOTE_PREFIX + json.dumps(details))
     annot.set_flags(pymupdf.PDF_ANNOT_IS_PRINT if note['print'] else 0)
     return annot
 
@@ -323,7 +323,7 @@ def export_pdf(model, session, send):
         if model['kind'] == 'practice':
             result.set_metadata(sources[0].metadata)
         else:
-            result.set_metadata(dict(title=model['title'], creator='Preview Cleaner'))
+            result.set_metadata(dict(title=model['title'], creator='Cantus PDF'))
         add_page_numbers(result, options)
         if options['flatten']:
             before_doc = stack.enter_context(pymupdf.open(stream=result.tobytes(), filetype='pdf'))

@@ -16,7 +16,7 @@ class PageToolWindow:
     def __init__(self, owner, mode):
         self.owner, self.mode = owner, mode
         self.window = tk.Toplevel(owner.root)
-        self.window.title(('Join PDFs' if mode == 'join' else 'Split PDF') + ' — Preview Cleaner')
+        self.window.title(('Join PDFs' if mode == 'join' else 'Split PDF') + ' — Cantus PDF')
         self.window.geometry('1000x700')
         self.window.minsize(800, 580)
         self.window.configure(menu=owner.root.cget('menu'))

@@ -1,4 +1,4 @@
-# Coding-agent handoff — Preview Cleaner 0.18.0
+# Coding-agent handoff — Cantus PDF 0.19.0
 
 ## Objective
 
@@ -115,3 +115,7 @@ The inspector scrolls to focused fields and Apply remains in a reserved footer.
 ## Persistent main workspaces
 
 CleanerWindow owns a three-tab Notebook. MusicWorkspace.window is now a Frame inside a persistent tab, not a Toplevel. Keep document models/workers alive across tab changes. Dialogs and file choosers use winfo_toplevel() for ownership. Root Open/Save/Escape bindings route through workspace_shortcut; avoid reintroducing workspace-level toplevel bindings. GUI tests must deiconify the root when verifying music workspace geometry/focus.
+
+## Product identity
+
+Public app name: Cantus PDF. Build with CantusPDF.spec; executable CantusPDF; bundle dist/Cantus PDF.app. Preserve legacy preview_cleaner module, local.previewcleaner.app bundle ID, preview-cleaner-music-set project format and PreviewCleanerNote:1: subjects for compatibility. The GitHub repository is tuanmichiganstate/CantusPDF; origin points to its new URL. The local workspace directory is CantusPDF.

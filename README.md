@@ -1,8 +1,8 @@
-# Preview Cleaner — working source prototype 0.11.0
+# Cantus PDF — 0.19.0
 
-A small, local desktop app for removing **supported separate PDF text overlays**, such as the large diagonal `Preview` label in the supplied example. It has a desktop interface and a command-line interface.
+Prepare sheet music for the liturgy: create printable PDFs, organize pages, add editable notes, and assemble music for a service. Processing stays on your Mac.
 
-**Status:** tested processing core and a packaged macOS app for Apple Silicon on macOS 26 or later. The app was built and smoke-tested on macOS 26.6.2. Windows packaging and testing on other Macs remain to be done. Only use documents you own or are authorized to modify.
+**Status:** tested processing core and a packaged macOS app for Apple Silicon on macOS 26 or later. The app was built and smoke-tested on macOS 26.6.2. Windows packaging and testing on other Macs remain to be done.
 
 On macOS, the expanded page viewer uses a maximized window to avoid a Tk crash during native fullscreen exit. Close or Esc returns to the comparison.
 
@@ -25,7 +25,7 @@ All document processing is local. No API key, AI model, OCR engine, subscription
 
 ## Run on macOS
 
-Open `dist/PreviewCleaner.app`, or copy it to Applications first. The app includes Python and its runtime dependencies. `dist/PreviewCleaner-macOS-arm64.zip` contains the same app for convenient copying. This local build is ad-hoc signed, not Developer ID signed or notarized.
+Open `dist/Cantus PDF.app`, or copy it to Applications first. The app includes Python and its runtime dependencies. `dist/CantusPDF-macOS-arm64.zip` contains the same app for convenient copying. This local build is ad-hoc signed, not Developer ID signed or notarized.
 
 To rebuild on this Apple Silicon Mac with Python 3.12 and Tkinter:
 
@@ -33,7 +33,7 @@ To rebuild on this Apple Silicon Mac with Python 3.12 and Tkinter:
 bash scripts/build_macos.sh
 ```
 
-The build recipe uses `requirements-build-macos.txt` and `PreviewCleaner.spec`, runs the tests, verifies the bundle signature, and creates the ZIP. It replaces generated files in `build/` and `dist/`; quit the app before rebuilding. The macOS 26 minimum reflects the bundled Tcl/Tk libraries.
+The build recipe uses `requirements-build-macos.txt` and `CantusPDF.spec`, runs the tests, verifies the bundle signature, and creates the ZIP. It replaces generated files in `build/` and `dist/`; quit the app before rebuilding. The macOS 26 minimum reflects the bundled Tcl/Tk libraries.
 
 To run directly from source instead:
 
@@ -129,7 +129,7 @@ The macOS build recipe is documented above. For a future Windows build, a candid
 
 ```bash
 python -m pip install pyinstaller
-python -m PyInstaller --windowed --onedir --name PreviewCleaner run_app.py
+python -m PyInstaller --windowed --onedir --name CantusPDF run_app.py
 ```
 
 Build Windows packages on Windows; that build has not been tested. Developer ID signing and notarization are not included in the macOS recipe.
@@ -266,3 +266,7 @@ Apply counts changed pages, and Revert draft restores the state at dialog openin
 ### One-window workspaces (0.18.0)
 
 Prepare PDF, PDF notes, and Service collection are now persistent tabs in one main window. Switch freely without reopening documents or losing edits; each tab keeps its own project and worker. Open/Save shortcuts follow the selected tab. Crop, expanded previews, batch export and standalone Join/Split still use focused secondary windows.
+
+### Cantus PDF naming (0.19.0)
+
+The app is now **Cantus PDF** (formerly Preview Cleaner). Existing `.pcset` projects and managed PDF annotations remain compatible. The internal Python module, project format, annotation identifiers, and bundle identifier are retained for continuity. The GitHub repository is [tuanmichiganstate/CantusPDF](https://github.com/tuanmichiganstate/CantusPDF).

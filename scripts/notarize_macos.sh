@@ -9,10 +9,10 @@ if [[ "$MACOS_SIGN_IDENTITY" != "Developer ID Application:"* ]]; then
     exit 1
 fi
 bash scripts/build_macos.sh
-codesign --verify --deep --strict dist/PreviewCleaner.app
+codesign --verify --deep --strict "dist/Cantus PDF.app"
 notary_result=$(mktemp)
 trap 'rm -f "$notary_result"' EXIT
-xcrun notarytool submit dist/PreviewCleaner-macOS-arm64.zip \
+xcrun notarytool submit dist/CantusPDF-macOS-arm64.zip \
     --keychain-profile "$NOTARY_PROFILE" --wait --timeout 20m \
     --output-format json > "$notary_result"
 .venv-build/bin/python - "$notary_result" <<'PY'
@@ -22,8 +22,8 @@ if result.get("status") != "Accepted":
     raise SystemExit(f"Notarization was not accepted: {result.get('status')}; submission {result.get('id')}")
 print(f"Apple accepted notarization: {result['id']}")
 PY
-xcrun stapler staple dist/PreviewCleaner.app
-xcrun stapler validate dist/PreviewCleaner.app
-spctl --assess --type execute --verbose=2 dist/PreviewCleaner.app
-ditto -c -k --sequesterRsrc --keepParent dist/PreviewCleaner.app dist/PreviewCleaner-macOS-arm64.zip
-echo "Signed, notarized, stapled archive: dist/PreviewCleaner-macOS-arm64.zip"
+xcrun stapler staple "dist/Cantus PDF.app"
+xcrun stapler validate "dist/Cantus PDF.app"
+spctl --assess --type execute --verbose=2 "dist/Cantus PDF.app"
+ditto -c -k --sequesterRsrc --keepParent "dist/Cantus PDF.app" dist/CantusPDF-macOS-arm64.zip
+echo "Signed, notarized, stapled archive: dist/CantusPDF-macOS-arm64.zip"
