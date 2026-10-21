@@ -416,7 +416,7 @@ def clean(data: bytes, target: str = "Preview", password: str = "", *,
             if sig != expected_sig:
                 raise CleanerError(f"Saved-output text validation failed on page {index + 1}.")
     report = {
-        "app_version": "0.7.3", "target": target if remove_overlays else None, "page_count": len(rows),
+        "app_version": "0.13.0", "target": target if remove_overlays else None, "page_count": len(rows),
         "remove_overlays": remove_overlays,
         "removed_count": removed, "pages_changed": sum(p.removed > 0 for p in rows),
         "unsupported_pages": [p.page for p in rows if p.status == "unsupported"],

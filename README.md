@@ -1,4 +1,4 @@
-# Preview Cleaner — working source prototype 0.7.3
+# Preview Cleaner — working source prototype 0.11.0
 
 A small, local desktop app for removing **supported separate PDF text overlays**, such as the large diagonal `Preview` label in the supplied example. It has a desktop interface and a command-line interface.
 
@@ -16,7 +16,7 @@ On macOS, the expanded page viewer uses a maximized window to avoid a Tk crash d
 - Save a page-by-page JSON verification report.
 - Preserve the original file; refuse to overwrite any existing output file.
 - Retain PDF vector content rather than exporting page images.
-- Enable ordinary and high-quality printing automatically in every export, including when no overlay is found. Print-restricted copies are saved without encryption, opening passwords, or other PDF permission restrictions. Already-printable PDFs retain their existing security. Password-protected inputs still require a valid opening password; passwords are never written to reports.
+- Enable ordinary and high-quality printing automatically in every Clean/Batch export, including when no overlay is found. Print-restricted copies are saved without encryption, opening passwords, or other PDF permission restrictions. Already-printable PDFs retain their existing security. Password-protected inputs still require a valid opening password; passwords are never written to reports.
 - Print-only mode preserves page content, including overlays.
 - Refuse signed PDFs / detected signature fields.
 - Fail closed on unsupported or ambiguous page structures.
@@ -62,11 +62,11 @@ These commands avoid needing to activate a PowerShell script.
 
 ## Desktop workflow
 
-1. Drag one PDF from Finder onto the **Original PDF** pane, or choose **Open PDF**. Leave the label as `Preview` for the sample. Dropping works before or after loading a document; password prompts and validation are the same as opening a file. Folders and multiple-file drops are rejected.
+1. Drag one PDF from Finder onto the **Original PDF** pane, or choose **Open PDF**. Leave the label as `Preview` for the sample. Dropping works before or after loading a document; password prompts and validation are the same as opening a file. Folders are rejected; multiple-file drops open the Batch queue.
 2. Leave **Remove supported text overlays** checked to clean overlays, or uncheck it for a print-only copy. Printing is always enabled; there is no printing toggle.
-3. Choose **Analyze & preview**.
+3. Choose **Preview changes**.
 4. Inspect the original/output panes and page-by-page messages. Navigate to check all pages.
-5. Choose **Save new PDF** and use a new name, such as `score_printable.pdf`.
+5. Choose **Save copy…** and use a new name, such as `score_printable.pdf`.
 6. Optionally choose **Save report**. The report records whether PDF security was removed for printing.
 
 A `no_candidate` result means the detector found no supported-looking text, **not** that the page is guaranteed watermark-free. A label may be an image, vector outlines, or another unsupported representation. Some pages can be cleaned while others remain unchanged; the app reports that distinction.
@@ -81,7 +81,7 @@ python -m preview_cleaner "/path/to/input.pdf" --print-only -o "/path/to/input_p
 
 Optional label: `--text DRAFT`. Detection remains limited to large diagonal text, even when the target label changes.
 
-All exports enable printing. `--print-only` skips overlay removal; `--inspect` remains read-only and reports the current printing permission. This prepares a PDF for printing in your PDF viewer; it does not send a job to a printer.
+All CLI exports enable printing. `--print-only` skips overlay removal; `--inspect` remains read-only and reports the current printing permission. This prepares a PDF for printing in your PDF viewer; it does not send a job to a printer.
 
 Exit codes: `0` successful inspection or export; `1` error; `3` printable output produced but some candidate overlays were unsupported. Version 0.2.0 exports even when no overlay is removed; the former exit code `2` is no longer used.
 
@@ -113,7 +113,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-The current suite passes 95 automated tests on macOS. Tests cover supported encodings, non-target text, phrases, ambiguity, mixed text objects, inline images, comments, clipping mode, nested forms, raster pages, password handling, signatures, no-overwrite behavior, repeat processing, printable copies, dropped-path handling, worker crashes/timeouts/cancellation, and the Tk event loop. The GUI tests require a graphical desktop with Tkinter. Print-only regression fixtures verify unchanged content streams and rendered pixels with AES-128/AES-256 security and both blocked and low-quality-only printing.
+The current suite passes 143 automated tests on macOS. Tests cover supported encodings, non-target text, phrases, ambiguity, mixed text objects, inline images, comments, clipping mode, nested forms, raster pages, password handling, signatures, no-overwrite behavior, repeat processing, printable copies, dropped-path handling, worker crashes/timeouts/cancellation, and the Tk event loop. The GUI tests require a graphical desktop with Tkinter. Print-only regression fixtures verify unchanged content streams and rendered pixels with AES-128/AES-256 security and both blocked and low-quality-only printing.
 
 `tests/fixtures` contains only synthetic PDFs from ReportLab, fpdf2, and PyMuPDF, plus a malformed file. Supported fixtures are checked for unchanged graphics and exact rendered pixels outside the removed label. Unsupported fixtures must remain byte-identical. To regenerate the corpus, install `requirements-fixtures.txt` and run `python scripts/generate_fixtures.py`; fixture-generator dependencies are not bundled into the app.
 
@@ -154,3 +154,63 @@ Double-click either preview or choose **Expand** for a full-screen page viewer. 
 Version 0.7 adds persistent page warnings, direct page-number entry in both views, clearer printable-copy export wording, grouped PDF details with readable timestamps, and an explicit full-screen Original/Output heading.
 
 Worker startup uses a headless subprocess (native `posix_spawn` on macOS), avoiding the forked Cocoa state that caused intermittent startup/cancellation crashes. Passwords travel through the child’s standard-input pipe, never command arguments or configuration files. Progress and results stay in a private temporary directory and are removed after the worker exits.
+
+## Batch PDF export
+
+Drop several PDFs onto Original PDF, select several files with Open PDF, or choose Batch… to open the batch list. Add PDFs accepts more files; dropping onto the list also works. Duplicate paths are ignored.
+
+Set the shared overlay text/removal option, then choose Export all… and an output folder. Files run sequentially in background workers; each successful result is saved as `<name>-printable.pdf`, with numbered suffixes for existing names. Original files and existing output files are never overwritten. Printing is always enabled; restricted copies lose encryption and opening passwords as explained in the batch window.
+
+Each file has its own status and saved path. Select a row for complete details. Failed files do not stop later files. Encrypted inputs prompt separately; Cancel in the password prompt skips that file. Batch Cancel stops the active worker and remaining queue; copies already saved are kept. Clear list starts a fresh batch. Unsupported overlays stay unchanged and are flagged for review. Batch export saves verified copies directly; use single-file mode when you want to compare previews before saving.
+
+## Compact interface (0.9.0)
+
+Preview changes is the primary action before processing; Save copy becomes primary once output is ready. Printing/security summaries remain visible, while Help and Security details contain the full behavior and limitations. Batch uses short status labels, a drop zone and Export N PDFs.
+
+### PDF and security details (0.10.0)
+
+Use **PDF details…** or **Security details…** to open the read-only pane beside the comparison. **Document** and **Security** jump to the corresponding section; **Close** restores preview space. In Batch, use **PDF / security…**, then select a row to inspect that PDF and its export result. Selecting a locked PDF does not prompt for its password; complete details appear after unlocking during processing. The pane never displays passwords.
+
+## Join and Split (0.11.0)
+
+These independent tools are available from **Tools → Join PDFs… / Split PDF…**. They do not remove overlays, change printing permissions, or inherit Clean/Batch options.
+
+- **Join:** drop or add two or more PDFs, drag rows or use Up/Down, then **Join & Save…**. Entire files are combined in list order. Select a row for its first-page thumbnail and metadata.
+- **Split:** open one PDF and choose **Every page**, **Every N pages**, or **Custom ranges** such as `1–3; 4–8; 10`. The output table previews filenames and ranges. Overlapping, reversed, empty or out-of-bounds ranges are rejected. Omitted page counts are visible before saving.
+- Reading, thumbnails, export and page verification run in a background worker. Only one PDF task runs at a time across Clean, Batch, Join and Split. Cancel keeps completed split files and removes unfinished staging files.
+- Output files never replace originals or existing files; collisions get numbered suffixes. **Show in Finder** reveals the last completed output.
+- Sources are limited to 100 MB / 300 pages; Join also applies those combined limits. Encrypted PDFs (including owner-password-only encryption), signature fields, forms, attachments, layers, tagged content, portfolios and named actions are blocked rather than silently discarded.
+- Page text/vector content, boxes, rotation, supported annotations and links are copied. Every output page is checked against source text/geometry and rendered appearance before publication. Internal links outside a split part are omitted. Bookmarks and page labels are remapped. Split keeps source metadata; Join uses the first source's metadata and the chosen output title.
+
+Native menu navigation, file selection and both workspace layouts were checked on this Mac. Automated coverage includes dropped-file routing and reordering; the actual Finder drag gesture for the new tools still needs manual acceptance. The packaged self-test includes Join and Split. No new CLI switches are introduced.
+
+## Music workspaces (0.12.0)
+
+Enter any workspace directly from the navigation bar or **Workspace** menu; no mandatory sequence is imposed. Clean/Batch and the independent Join/Split tools remain available.
+
+- **Prepare PDF:** clean and save permanent printable practice copies. Current PDF → Notes / Collection uses the saved copy after processing. Join/Split also offers **Use saved PDF…**.
+- **PDF notes:** open a previously saved printable PDF, add a note then click its page. Edit/delete notes, drag their position, or adjust text size and box dimensions. Notes appear on the page and print by default. Transpose text is a reminder; the app does not transpose the score.
+- **Service collection:** add printable PDFs at any time, reorder songs, choose retained pages, and assign a liturgical part. Export combines the selected pages with section/song bookmarks. Imported song notes are copied; service-specific edits never alter the practice PDF.
+
+**Save project** writes a portable `.pcset` containing PDF snapshots, ordering, page choices and editable notes. **Open project** resumes it even after the source files move. Save As creates a separate project; existing unrelated files are not overwritten. Undo and unsaved-change prompts protect editing work.
+
+**Export PDF** creates a separate PDF with editable FreeText annotations. Reopening that PDF in PDF notes recognizes this app's annotations for editing/removal; unrelated annotations are preserved. Uncheck **Include in PDF / print** for project-only notes: these are retained in `.pcset` but omitted from the exported PDF. Keep the project to retain private notes and collection structure.
+
+These workspaces reuse Join/Split's conservative input restrictions and 100 MB / 300-page limits. They do not clean overlays or unlock PDFs automatically. Reads, preview rendering, saving and export run in background workers.
+
+## Page organization and print layout (0.13.0)
+
+In **PDF notes** or **Service collection**, select a song and choose **Organize / crop pages…**. The shared thumbnail organizer supports multiple selection, Keep/Omit, row dragging, Up/Down and clockwise rotation. Crop trims percentages from the original displayed edges; select several pages or Select all to apply together. Reset selected restores both crop and rotation. Apply records one undoable project edit; Cancel discards the dialog changes. At least one page must remain. For long PDFs, the Thumbnails buttons load groups of 12.
+
+Prepare's Workspace menu and Join/Split's **Organize / crop…** button open a separate copy in PDF notes. Export the organized copy when needed; these actions never silently change the Clean or Split document. Crop hides content outside the viewing box; it is not permanent redaction. The `.pcset` retains the original snapshot so the crop can be reset.
+
+**Open file / Add files** and drops now accept PNG/JPEG as well as PDF. Each image becomes a PDF copy with the original image resolution; originals are unchanged. Images are limited to 40 megapixels and 100 MB. In a collection, multiple images are separate entries that can be reordered and joined.
+
+**Export layout…** provides:
+- A Unicode title cover and linked contents page(s), with physical PDF page destinations.
+- Odd physical page starts for each song, inserting blank pages where needed for duplex printing.
+- Page numbers with a configurable starting number, starting physical page, top/bottom center/right placement and edge inset. Numbering is rejected if its box covers visible content; change the inset/position or disable it.
+- **Print copy: flatten all annotations**, which embeds their appearance in the export. Comment metadata is not retained in that print copy; keep the project/editable PDF for later changes. Private notes remain absent. This does not lock the PDF against other editing software.
+- Lossless size optimization (default on): compression and duplicate-object cleanup, with no image downsampling. If optimization would grow the output, the smaller serialization is kept. Some PDFs cannot shrink further.
+
+**Preview export** builds and displays the actual final layout before saving. Export options are saved in the project. Covers, contents and inserted blanks count toward the 300-page output limit. New projects use format version 2; existing version-1 projects open and upgrade, but older app versions cannot open version-2 projects.

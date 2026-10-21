@@ -11,7 +11,7 @@ from preview_cleaner.gui import CleanerWindow
 def window():
     interpreter = tk.Tcl()
     return SimpleNamespace(root=SimpleNamespace(tk=interpreter.tk, after_idle=Mock()),
-                           status=Mock(), load_path=Mock())
+                           status=Mock(), load_path=Mock(), open_batch=Mock())
 
 
 def tcl_list(window, *paths):
@@ -29,7 +29,16 @@ def test_drop_preserves_unicode_spaces_and_braces_and_defers_loading(window, tmp
     window.load_path.assert_called_once_with(path)
 
 
-@pytest.mark.parametrize("kind", ["multiple", "folder", "non_pdf", "missing", "empty", "malformed"])
+def test_multiple_drop_opens_batch_after_native_drag_finishes(window, tmp_path):
+    paths = (str(tmp_path / 'one.pdf'), str(tmp_path / 'two.pdf'))
+    assert CleanerWindow.drop_pdf(window, SimpleNamespace(data=tcl_list(window, *paths))) == COPY
+    window.open_batch.assert_not_called()
+    window.root.after_idle.call_args.args[0]()
+    window.open_batch.assert_called_once_with(paths)
+    window.load_path.assert_not_called()
+
+
+@pytest.mark.parametrize("kind", ["folder", "non_pdf", "missing", "empty", "malformed"])
 def test_rejected_drop_does_not_replace_document(window, tmp_path, kind):
     path = tmp_path / "original.pdf"
     path.write_bytes(b"placeholder")

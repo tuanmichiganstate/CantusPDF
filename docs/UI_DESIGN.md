@@ -25,3 +25,45 @@ On macOS, Expand now maximizes a normal viewer window rather than entering a nat
 The supplied 0.7.2 crash shows `CFRelease` in Tk 9.0.4 `resetTkLayerBitmapContext` during an AppKit fullscreen-exit transition. Tk's `TkWmDeadWindow` releases the bitmap context before closing the native window, without clearing the pointer; a late backing-property callback is a plausible double release. This is a targeted workaround, not an upstream Tk repair or proof that all display-change crashes are fixed. The user could not identify the exact triggering control. Main-window green-button fullscreen and multi-monitor transitions need separate acceptance checks.
 
 Upstream source inspected: https://github.com/tcltk/tk/blob/core-9-0-4/macosx/tkMacOSXWm.c and https://github.com/tcltk/tk/blob/core-9-0-4/macosx/tkMacOSXWindowEvent.c.
+
+## Batch export (0.8.0)
+
+Multiple-file drops and multi-selection route to a separate batch window, preserving the current comparison. Its queue shows input, outcome and saved path, with scrollbars and a full-detail selected-row label. Shared options are copied from the comparison on opening and locked during export. One background worker runs at a time. Passwords are prompted per file and never persisted. File failures continue to the next row; cancellation retains already exported files. Exclusive file creation prevents overwrite; duplicate output basenames receive numeric suffixes.
+
+## Readability review with Stitch (0.9.0)
+
+New project: https://stitch.withgoogle.com/projects/3998256195558143840
+Comparison screen: e6074f6399fe4619b6d7e3b7bf3feed7
+Batch screen: 9fcc3a4051c646dcb006caa6d986fc5d
+
+Adopted: short labels, fewer repeated empty-state instructions, one primary action per workflow stage, concise source/output security status, and on-demand Help/Security details. Batch shows the PDF count, Export N PDFs, a central drop affordance and semantic outcome colors alongside text. Paths and error explanations remain available on selection.
+
+The app retains the existing native sidebar rather than moving it to the right as in Stitch. It does not adopt invented source-security table columns or flattening of signatures/forms. Signed inputs remain blocked and unsupported content remains unchanged. No customer PDFs were sent to Stitch; the brief used a synthetic Invoice.pdf example. Stitch also suggested dedicated PDF/Security detail drawers and a dark-mode variant; dark mode and a drawer redesign are not implemented.
+
+Packaged comparison and batch empty states were visually reviewed. The full suite includes assertions that print restrictions and password-removal effects remain visible in the compact summary.
+
+## Inline PDF/security pane (0.10.0)
+
+The proposed details drawer is now implemented as a collapsible right-hand pane in comparison and batch. Document and Security buttons navigate read-only, scrollable metadata. Closing it restores working space. Batch selection updates metadata and export results; clearing the queue removes stale details. Locked PDFs show a brief state without prompting until export, then refresh after authentication. The compact security consequences remain visible outside the pane. Dark mode remains deferred. Automated source and packaged checks cover the pane lifecycle and selection updates; native inspector visual acceptance remains pending because UI automation could not activate the Tk controls reliably.
+
+## Independent Join / Split tools (0.11.0)
+
+The native Tools menu opens separate workspaces without changing the active Clean document. Join uses an ordered table with drag reorder and explicit Up/Down alternatives. Split offers three modes and a preview table of named output ranges, with omitted-page counts. A narrow thumbnail/metadata area is selection-driven. Detailed limitations live in Help; errors remain visible by source or in the status line. No Clean, printable or password-removal controls appear in these tools.
+
+The footer is reserved before the table receives remaining height, keeping Export and Cancel visible at the 800×580 minimum. PDF reading and thumbnails use the same background worker boundary as export. Native menus, PDF file selection, populated Join and Split tables and default layouts were inspected; automated tests cover minimum-size footer visibility. Finder multi-file dragging and row-drag gestures remain manual acceptance items.
+
+## Flexible music workspaces (0.12.0)
+Prepare PDF, PDF notes and Service collection are independent entry points in a shared navigation bar and native Workspace menu. Printable PDFs are durable practice assets. Notes can be added long after cleaning; a collection embeds copies of chosen PDFs rather than depending on the download/cleaning session. Existing Join/Split screens are reused through saved-output handoffs.
+
+The editor presents songs on the left, page preview in the middle and a scrollable song/note editor on the right. Keep pages and liturgical parts structure each service. Add note then click the page; drag to move, edit/delete in the sidebar. Include in PDF/print defaults on per the user's preference; private notes remain only in the project. Expand temporarily hides sidebars without entering native fullscreen. Save project, Save As and Export PDF remain visible in the reserved footer.
+
+`.pcset` saves snapshots and editable structure. Export PDF is a separate action; it never replaces practice originals. Imported song notes and service notes are labeled separately. Undo and Save/Discard/Cancel guard unsaved work. Native collection navigation, project chooser and populated layout were inspected using a synthetic Vietnamese project. Automated tests cover editing, dragging event sequences and workspace routing; actual Finder and pointer-drag gestures remain manual acceptance items.
+
+## Shared page organization and export layout (0.13.0)
+The existing music workspace contains Organize/crop and Export layout dialogs, avoiding a separate screen per operation. Join/Split and Prepare hand off a source copy to PDF notes for page edits. The organizer combines thumbnails, multi-selection, Keep/Omit, drag/arrow reordering, rotation and percentage crop margins. Dialog changes remain a draft until Apply; parent Undo can restore the full edit. Original displayed-edge coordinates keep crop settings stable across rotations. Thumbnail batches are bounded to 12 pages.
+
+Export options are persistent project settings. Preview uses the same export pipeline and shows all final pages. Number positions are checked for existing visible content before drawing. Cover and linked contents use embedded Unicode text; contents references physical PDF pages even when printed numbering starts elsewhere. Annotations stay editable by default; flattening is explicit and includes foreign annotations, with a disclosure about keeping the editable project. Size optimization never reduces image resolution.
+
+PNG/JPEG input uses the same Open/Add/drop entry points. The editor retains immutable PDF snapshots, including converted image assets. Cropping is reversible in the project and is not redaction.
+
+Validation: 195 tests passed; packaged diagnostics passed. Native export-options dialog, final cover preview and populated organizer were visually inspected. Poppler-rendered cover, contents, annotated score and rotated/cropped page were reviewed. Actual Finder/row/note-drag gestures and physical duplex printing remain separate manual checks.

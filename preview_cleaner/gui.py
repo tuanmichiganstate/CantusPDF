@@ -12,6 +12,11 @@ from tkinterdnd2 import COPY, DND_FILES, REFUSE_DROP, TkinterDnD
 
 from .core import CleanerError, PasswordNeeded, open_pdf, printing_allowed, read_pdf, save_new
 from .jobs import CleaningJob
+from .batch import BatchWindow
+from .page_tools import PageToolWindow
+from .music_workspace import MusicWorkspace
+from .help_ui import show_help
+from .inspector import DetailsPane, document_fields
 from .viewer import PageViewer
 from .ui_helpers import format_pdf_date, page_number, result_notice
 
@@ -27,6 +32,7 @@ class CleanerWindow:
         self.password = ""
         self.original: pymupdf.Document | None = None
         self.output: pymupdf.Document | None = None
+        self.last_saved_path = None
         self.result = None
         self.job = None
         self.poll_id = None
@@ -34,18 +40,21 @@ class CleanerWindow:
         self.images: list[tk.PhotoImage] = []
         self.target = tk.StringVar(value="Preview")
         self.remove_overlays = tk.BooleanVar(value=True)
-        self.status = tk.StringVar(value="Open or drop a PDF to begin. Your original file will not be overwritten.")
+        self.status = tk.StringVar(value="Ready")
         self.page_label = tk.StringVar(value="No document")
         self.page_input = tk.StringVar(value="")
         self.notice_text = tk.StringVar(value="")
+        self.security_summary = tk.StringVar(value="Originals stay unchanged.")
         self.security_status = tk.StringVar(value="Source printing: no document. Output printing: always enabled.")
 
         self.render_id = None
         self.details_visible = False
         self.pdf_details_window = None
         self.page_viewer = None
-        self.document_info = tk.StringVar(value="No document selected")
-        self.output_label = tk.StringVar(value="Awaiting analysis")
+        self.batch_window = None
+        self.tool_windows = {}
+        self.document_info = tk.StringVar(value="")
+        self.output_label = tk.StringVar(value="")
         self.build_interface()
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.target.trace_add("write", self.invalidate_result)
@@ -76,15 +85,37 @@ class CleanerWindow:
         style.configure("TEntry", padding=8, fieldbackground="white", bordercolor=colors["line"])
         style.configure("Horizontal.TProgressbar", background=colors["teal"], troughcolor=colors["line"], borderwidth=0)
         self.root.configure(background=colors["surface"])
+        menu = tk.Menu(self.root)
+        tools = tk.Menu(menu, tearoff=False)
+        tools.add_command(label="Join PDFs…", command=lambda: self.open_page_tool('join'))
+        tools.add_command(label="Split PDF…", command=lambda: self.open_page_tool('split'))
+        menu.add_cascade(label="Tools", menu=tools)
+        workspace = tk.Menu(menu, tearoff=False)
+        workspace.add_command(label="Prepare PDF", command=self.root.lift)
+        workspace.add_command(label="PDF notes…", command=lambda: self.open_music('practice'))
+        workspace.add_command(label="Service collection…", command=lambda: self.open_music('service'))
+        workspace.add_separator()
+        workspace.add_command(label="Current PDF → Organize / crop…", command=lambda: self.handoff_music('practice'))
+        workspace.add_command(label="Current PDF → Notes…", command=lambda: self.handoff_music('practice'))
+        workspace.add_command(label="Current PDF → Collection…", command=lambda: self.handoff_music('service'))
+        menu.add_cascade(label="Workspace", menu=workspace)
+        self.root.configure(menu=menu)
         header = ttk.Frame(self.root, padding=(22, 16))
         header.pack(fill="x")
         ttk.Label(header, text="Preview Cleaner", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, text="On-device · Original stays unchanged", style="Muted.TLabel").pack(side="left", padx=22)
-        self.save_button = ttk.Button(header, text="Save printable copy…", command=self.save, state="disabled", style="Primary.TButton")
+        self.save_button = ttk.Button(header, text="Save copy…", command=self.save, state="disabled", style="Primary.TButton")
         self.save_button.pack(side="right")
         ttk.Button(header, text="Open PDF…", command=self.choose_file).pack(side="right", padx=10)
+        ttk.Button(header, text="Batch…", width=7, command=self.open_batch).pack(side="right")
+        ttk.Button(header, text="Help", width=5, command=lambda: show_help(self.root)).pack(side="right", padx=8)
+        navigation = ttk.Frame(self.root, padding=(22, 0, 22, 8))
+        navigation.pack(fill="x")
+        ttk.Button(navigation, text="Prepare PDF", command=self.root.lift).pack(side="left", padx=(0, 8))
+        ttk.Button(navigation, text="PDF notes", command=lambda: self.open_music('practice')).pack(side="left", padx=(0, 8))
+        ttk.Button(navigation, text="Service collection", command=lambda: self.open_music('service')).pack(side="left")
         ttk.Separator(self.root).pack(fill="x")
         body = ttk.Frame(self.root)
+        self.body = body
         body.pack(fill="both", expand=True)
         sidebar_shell = ttk.Frame(body, width=306)
         sidebar_shell.pack(side="left", fill="y")
@@ -93,9 +124,9 @@ class CleanerWindow:
         # scrollable options area. Long filenames/security messages cannot clip them.
         sidebar_footer = ttk.Frame(sidebar_shell, padding=(20, 12, 20, 16))
         sidebar_footer.pack(side="bottom", fill="x")
-        self.process_button = ttk.Button(sidebar_footer, text="Analyze & preview", command=self.process, state="disabled", style="Primary.TButton")
+        self.process_button = ttk.Button(sidebar_footer, text="Preview changes", command=self.process, state="disabled", style="Primary.TButton")
         self.process_button.pack(fill="x")
-        self.authorization_note = ttk.Label(sidebar_footer, text="For documents you own or are authorized to modify.", style="Muted.TLabel", wraplength=266)
+        self.authorization_note = ttk.Label(sidebar_footer, text="Authorized documents only.", style="Muted.TLabel", wraplength=266)
         self.authorization_note.pack(fill="x", pady=(10, 0))
         sidebar_viewport = ttk.Frame(sidebar_shell)
         sidebar_viewport.pack(fill="both", expand=True)
@@ -110,7 +141,7 @@ class CleanerWindow:
         self.sidebar_canvas.bind("<Configure>", lambda event: self.sidebar_canvas.itemconfigure(self.sidebar_item, width=event.width))
         sidebar.bind("<Configure>", lambda event: self.sidebar_canvas.configure(scrollregion=self.sidebar_canvas.bbox("all")))
         ttk.Label(sidebar, text="DOCUMENT", style="Section.TLabel").pack(anchor="w")
-        self.path_label = ttk.Label(sidebar, text="Open a PDF to begin", wraplength=250, font=("Helvetica Neue", 14, "bold"))
+        self.path_label = ttk.Label(sidebar, text="No PDF selected", wraplength=250, font=("Helvetica Neue", 14, "bold"))
         self.path_label.pack(anchor="w", pady=(10, 5))
         ttk.Label(sidebar, textvariable=self.document_info, style="Muted.TLabel", wraplength=250).pack(anchor="w")
         self.pdf_details_button = ttk.Button(sidebar, text="PDF details…", command=self.show_pdf_details, state="disabled")
@@ -121,18 +152,18 @@ class CleanerWindow:
         ttk.Label(sidebar, text="Overlay text", style="Muted.TLabel").pack(anchor="w", pady=(10, 4))
         self.target_entry = ttk.Entry(sidebar, textvariable=self.target)
         self.target_entry.pack(fill="x")
-        ttk.Label(sidebar, text="Only supported, separate text overlays are removed.", style="Muted.TLabel", wraplength=250).pack(anchor="w", pady=(8, 16))
         security = tk.Frame(sidebar, background="#edf5f5", highlightbackground="#cfdddd", highlightthickness=1, padx=12, pady=12)
-        security.pack(fill="x")
-        tk.Label(security, text="Printing enabled · Always on", background="#edf5f5", foreground="#0b636d", font=("Helvetica Neue", 12, "bold"), anchor="w").pack(fill="x")
-        tk.Label(security, textvariable=self.security_status, background="#edf5f5", foreground=colors["ink"], wraplength=222, justify="left", anchor="w", font=("Helvetica Neue", 12)).pack(fill="x", pady=(10, 0))
+        security.pack(fill="x", pady=(18, 0))
+        tk.Label(security, text="Printing enabled", background="#edf5f5", foreground="#0b636d", font=("Helvetica Neue", 12, "bold"), anchor="w").pack(fill="x")
+        tk.Label(security, textvariable=self.security_summary, background="#edf5f5", foreground=colors["ink"], wraplength=222, justify="left", anchor="w", font=("Helvetica Neue", 12)).pack(fill="x", pady=(10, 0))
+        ttk.Button(security, text="Security details…", command=lambda: self.show_pdf_details("SECURITY & EXPORT")).pack(anchor="w", pady=(8, 0))
         self.bind_sidebar_scroll(sidebar)
         self.sidebar_canvas.bind("<MouseWheel>", self.scroll_sidebar)
         ttk.Separator(body, orient="vertical").pack(side="left", fill="y")
         workspace = ttk.Frame(body, padding=(20, 18))
+        self.workspace = workspace
         workspace.pack(side="left", fill="both", expand=True)
-        ttk.Label(workspace, text="Compare pages", font=("Helvetica Neue", 17, "bold")).pack(anchor="w")
-        ttk.Label(workspace, text="Review the printable copy before saving.", style="Muted.TLabel").pack(anchor="w", pady=(4, 18))
+        ttk.Label(workspace, text="Compare", font=("Helvetica Neue", 17, "bold")).pack(anchor="w", pady=(0, 14))
         self.notice = tk.Label(workspace, textvariable=self.notice_text, anchor="w", justify="left", padx=12, pady=10,
                                background="#fff4d6", foreground="#784c00", wraplength=650, font=("Helvetica Neue", 12))
         self.notice.pack(fill="x", pady=(0, 12))
@@ -144,7 +175,7 @@ class CleanerWindow:
         viewer.rowconfigure(0, weight=1)
         self.panels = []
         self.expand_buttons = []
-        for col, title in enumerate(("Original PDF", "Output preview")):
+        for col, title in enumerate(("Original", "Printable copy")):
             frame = ttk.Frame(viewer, style="Paper.TFrame")
             frame.grid(row=0, column=col, sticky="nsew", padx=(0, 7) if col == 0 else (7, 0))
             frame.grid_propagate(False)
@@ -153,10 +184,10 @@ class CleanerWindow:
             pane_header = ttk.Frame(frame, style="Paper.TFrame", padding=(14, 8))
             pane_header.grid(row=0, column=0, sticky="ew")
             ttk.Label(pane_header, text=title, style="Paper.TLabel", font=("Helvetica Neue", 13, "bold")).pack(side="left")
-            expand = ttk.Button(pane_header, text="Expand", command=lambda source=col: self.expand_page(source), state="disabled")
+            expand = ttk.Button(pane_header, text="Expand", width=7, command=lambda source=col: self.expand_page(source), state="disabled")
             expand.pack(side="right")
             self.expand_buttons.append(expand)
-            ttk.Label(frame, text="Drop a PDF here to open or replace" if col == 0 else "", textvariable=self.output_label if col else None,
+            ttk.Label(frame, text="", textvariable=self.output_label if col else None,
                       style="Paper.TLabel", foreground=colors["muted"], padding=(14, 0, 14, 12)).grid(row=1, column=0, sticky="ew")
             stage = tk.Frame(frame, background=colors["canvas"])
             stage.grid(row=2, column=0, sticky="nsew")
@@ -254,57 +285,21 @@ class CleanerWindow:
         if self.page_viewer is not None:
             self.page_viewer.close(refresh=False)
 
-    def show_pdf_details(self):
+    def show_pdf_details(self, section="DOCUMENT"):
         if self.original is None:
+            show_help(self.root)
             return
-        if self.pdf_details_window is not None and self.pdf_details_window.winfo_exists():
-            self.pdf_details_window.lift()
-            return
-        dialog = tk.Toplevel(self.root)
-        self.pdf_details_window = dialog
-        dialog.title("PDF details")
-        dialog.geometry("640x590")
-        dialog.minsize(480, 400)
-        dialog.transient(self.root)
-        container = ttk.Frame(dialog, padding=22)
-        container.pack(fill="both", expand=True)
-        ttk.Label(container, text="PDF details", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(container, text="Original document · Read only", style="Muted.TLabel").pack(anchor="w", pady=(4, 16))
-        ttk.Button(container, text="Done", command=dialog.destroy).pack(side="bottom", anchor="e", pady=(14, 0))
-        body = ttk.Frame(container)
-        body.pack(fill="both", expand=True)
-        details = tk.Text(body, wrap="word", background="white", foreground=self.colors["ink"],
-                          relief="flat", padx=16, pady=14, font=("Helvetica Neue", 13))
-        details.pack(side="left", fill="both", expand=True)
-        scrollbar = ttk.Scrollbar(body, command=details.yview)
-        scrollbar.pack(side="right", fill="y")
-        details.configure(yscrollcommand=scrollbar.set)
-        details.tag_configure("label", font=("Helvetica Neue", 11, "bold"), foreground=self.colors["muted"])
-        doc = self.original
-        metadata = doc.metadata or {}
-        first = doc[0].rect
-        quality = "High-quality printing allowed" if printing_allowed(doc) else ("Low-quality printing only" if doc.permissions & pymupdf.PDF_PERM_PRINT else "Printing blocked")
-        fields = [("DOCUMENT", None), ("FILE", self.path.name), ("LOCATION", str(self.path.resolve())),
-                  ("SIZE", f"{len(self.data):,} bytes ({len(self.data) / 1024 / 1024:.2f} MB)"),
-                  ("PAGES", str(len(doc))), ("FIRST PAGE SIZE", f"{first.width:g} × {first.height:g} pt"),
-                  ("FORMAT", metadata.get("format")), ("PRODUCER & METADATA", None), ("TITLE", metadata.get("title")),
-                  ("AUTHOR", metadata.get("author")), ("CREATOR", metadata.get("creator")),
-                  ("PRODUCER", metadata.get("producer")), ("CREATED (PDF METADATA)", format_pdf_date(metadata.get("creationDate"))),
-                  ("MODIFIED (PDF METADATA)", format_pdf_date(metadata.get("modDate"))),
-                  ("SECURITY & EXPORT", None), ("ENCRYPTION", metadata.get("encryption") or "None"),
-                  ("OPENING PASSWORD", "Required" if doc.needs_pass else "Not required"),
-                  ("SOURCE PRINTING", quality),
-                  ("EXPORT SECURITY", "Existing password and security retained." if printing_allowed(doc) else
-                   "Opening password, encryption and other restrictions removed to enable high-quality printing.")]
-        details.tag_configure("section", font=("Helvetica Neue", 16, "bold"), foreground=self.colors["ink"], spacing1=12, spacing3=10)
-        for label, value in fields:
-            if label in ("DOCUMENT", "PRODUCER & METADATA", "SECURITY & EXPORT"):
-                details.insert("end", label + "\n", "section")
-                continue
-            details.insert("end", label + "\n", "label")
-            details.insert("end", str(value or "Not specified") + "\n\n")
-        details.configure(state="disabled")
-        dialog.bind("<Escape>", lambda event: dialog.destroy())
+        if self.pdf_details_window is None:
+            self.pdf_details_window = DetailsPane(self.body, self.close_pdf_details)
+            self.pdf_details_window.pack(side="right", fill="y", before=self.workspace)
+        self.pdf_details_window.set_fields(
+            document_fields(self.path, len(self.data), self.original), str(self.path))
+        self.pdf_details_window.reveal(section)
+
+    def close_pdf_details(self):
+        if self.pdf_details_window is not None:
+            self.pdf_details_window.destroy()
+            self.pdf_details_window = None
 
     def toggle_details(self):
         self.details_visible = not self.details_visible
@@ -320,18 +315,20 @@ class CleanerWindow:
         self.render_id = self.root.after(150, self.render)
 
     def invalidate_result(self, *_):
+        self.last_saved_path = None
         self.close_page_viewer()
         self.cancel_processing(quiet=True)
         self.result = None
-        self.output_label.set("Awaiting analysis")
+        self.output_label.set("")
         self.target_entry.configure(state="normal" if self.remove_overlays.get() else "disabled")
         if self.output is not None:
             self.output.close()
             self.output = None
-        self.save_button.configure(state="disabled")
+        self.save_button.configure(state="disabled", style="TButton")
+        self.process_button.configure(style="Primary.TButton")
         self.report_button.configure(state="disabled")
         if self.original is not None:
-            self.status.set("Options changed. Run Analyze & preview again before export.")
+            self.status.set("Options changed · preview again")
             self.render()
 
     def note(self, text: str):
@@ -341,20 +338,58 @@ class CleanerWindow:
         self.log.configure(state="disabled")
 
     def choose_file(self):
-        path = filedialog.askopenfilename(title="Open PDF", filetypes=[("PDF documents", "*.pdf")])
+        paths = filedialog.askopenfilenames(title="Open PDFs", filetypes=[("PDF documents", "*.pdf")])
+        if len(paths) == 1:
+            self.load_path(Path(paths[0]))
+        elif paths:
+            self.open_batch(paths)
+
+    def processing_busy(self):
+        return bool(self.job or (self.batch_window and self.batch_window.running) or
+                    any(window.job for window in self.tool_windows.values()))
+
+    def open_music(self, kind):
+        key = 'notes' if kind == 'practice' else 'collection'
+        if key not in self.tool_windows:
+            self.tool_windows[key] = MusicWorkspace(self, kind)
+        self.tool_windows[key].window.lift()
+        return self.tool_windows[key]
+
+    def handoff_music(self, kind):
+        if self.result is not None and not self.last_saved_path:
+            self.status.set("Save the printable copy first, then open it in Notes or Collection.")
+            return
+        path = self.last_saved_path if self.result is not None else self.path
         if path:
-            self.load_path(Path(path))
+            self.open_music(kind).add_paths([path])
+        else:
+            self.open_music(kind)
+
+    def open_page_tool(self, mode):
+        if mode not in self.tool_windows:
+            self.tool_windows[mode] = PageToolWindow(self, mode)
+        self.tool_windows[mode].window.lift()
+        return self.tool_windows[mode]
+
+    def open_batch(self, paths=()):
+        if self.batch_window is None:
+            self.batch_window = BatchWindow(self)
+        self.batch_window.add_paths(paths)
+        self.batch_window.window.lift()
 
     def drop_pdf(self, event):
-        """Accept one local PDF; Tcl list parsing preserves spaces and braces."""
+        """One PDF opens comparison; multiple PDFs open the batch queue."""
         try:
             paths = self.root.tk.splitlist(event.data)
         except tk.TclError:
             self.status.set("Could not read the dropped filename. Use Open PDF instead.")
             return REFUSE_DROP
-        if len(paths) != 1:
-            self.status.set("Drop one PDF at a time.")
+        if not paths:
+            self.status.set("Drop one or more PDF files.")
             return REFUSE_DROP
+        if len(paths) > 1:
+            self.root.after_idle(lambda: self.open_batch(paths))
+            return COPY
         path = Path(paths[0])
         if path.suffix.lower() != ".pdf" or not path.is_file():
             self.status.set("Drop a PDF file, not a folder or another file type.")
@@ -364,6 +399,7 @@ class CleanerWindow:
         return COPY
 
     def load_path(self, path: Path):
+        self.last_saved_path = None
         new_doc = None
         try:
             data = read_pdf(path)
@@ -384,14 +420,16 @@ class CleanerWindow:
             self.path_label.configure(text=path.name)
             self.document_info.set(f"{len(new_doc)} {'page' if len(new_doc) == 1 else 'pages'} · {len(data) / 1024:,.0f} KB")
             self.pdf_details_button.configure(state="normal")
-            self.output_label.set("Awaiting analysis")
-            self.process_button.configure(state="normal")
-            self.save_button.configure(state="disabled")
+            self.output_label.set("")
+            self.process_button.configure(state="normal", style="Primary.TButton")
+            self.save_button.configure(state="disabled", style="TButton")
             self.report_button.configure(state="disabled")
-            self.status.set("PDF loaded. Choose Analyze & preview before saving.")
+            self.status.set("Ready to preview")
             if printing_allowed(new_doc):
+                self.security_summary.set("Source: printable\nSecurity retained")
                 self.security_status.set("Source PDF: high-quality printing allowed.\n\nNew copy: printing enabled; existing password and security retained.")
             else:
+                self.security_summary.set("Source: print-restricted\nCopy: password & restrictions removed")
                 quality = "low-quality printing only" if new_doc.permissions & pymupdf.PDF_PERM_PRINT else "printing blocked"
                 self.security_status.set(f"Source PDF: {quality}.\n\nNew copy: high-quality printing enabled; opening password, encryption and other restrictions removed.")
             self.note("Supports large diagonal text labels in separate PDF text objects. Scanned/image watermarks are left unchanged.")
@@ -402,6 +440,9 @@ class CleanerWindow:
             messagebox.showerror("Cannot open PDF", str(exc))
 
     def process(self):
+        if self.processing_busy():
+            self.status.set("Another PDF task is running. Wait or cancel it first.")
+            return
         if self.data is None:
             return
         self.invalidate_result()
@@ -471,7 +512,8 @@ class CleanerWindow:
             report = result.report
             changed = report["removed_count"]
             self.output_label.set("Printable · Review unchanged marks" if report["unsupported_pages"] else "Printable · Ready to review")
-            self.save_button.configure(state="normal")
+            self.save_button.configure(state="normal", style="Primary.TButton")
+            self.process_button.configure(style="TButton")
             self.report_button.configure(state="normal")
             outcome = "Review needed: unsupported content remains." if report["unsupported_pages"] else "Printable copy ready."
             self.status.set(f"{outcome} Removed {changed} overlay(s) on {report['pages_changed']} of {report['page_count']} pages.")
@@ -490,7 +532,7 @@ class CleanerWindow:
             button.configure(state="normal" if document is not None else "disabled")
         for index, (label, document) in enumerate(zip(self.panels, (self.original, self.output))):
             if document is None:
-                label.configure(image="", text="Drop your PDF here\n\nor choose Open PDF" if index == 0 else "Your printable preview\nwill appear here\n\nChoose Analyze & preview")
+                label.configure(image="", text="Drop PDFs\n\nor open files" if index == 0 else "Preview appears here")
                 continue
             page = document[self.page]
             width = max(50, label.winfo_width() - 32)
@@ -539,6 +581,7 @@ class CleanerWindow:
         if path:
             try:
                 save_new(path, self.result.pdf_bytes, self.path)
+                self.last_saved_path = Path(path)
                 self.status.set(f"Saved: {path}. Original unchanged.")
             except CleanerError as exc:
                 messagebox.showerror("Could not save PDF", str(exc))
@@ -567,6 +610,11 @@ class CleanerWindow:
         self.original = self.output = None
 
     def close(self):
+        for tool in list(self.tool_windows.values()):
+            if tool.close() is False:
+                return
+        if self.batch_window is not None:
+            self.batch_window.close()
         if self.render_id is not None:
             self.root.after_cancel(self.render_id)
             self.render_id = None

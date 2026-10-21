@@ -1,6 +1,6 @@
 {
-  "built_at_utc": "2026-10-01T04:55:41.413114+00:00",
-  "app_version": "0.7.3",
+  "built_at_utc": "2026-10-21T10:07:52.476937+00:00",
+  "app_version": "0.13.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
   "minimum_macos": "26.0",
@@ -9,10 +9,10 @@
   "dependency_lock": "requirements-build-macos.txt",
   "app": "dist/PreviewCleaner.app",
   "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 35926909,
-  "archive_sha256": "884dadf95d27487349fde468e7f9b7e110031064c2d92c7a90298b2dac1eee66",
+  "archive_bytes": 36043901,
+  "archive_sha256": "9e7f4dbb81b90fcb601a3425a38945f241bf93c7199dbbf81be03cff9428f844",
   "automated_tests": {
-    "passed": 95,
+    "passed": 195,
     "failed": 0,
     "warnings": 5
   },
@@ -41,13 +41,13 @@
     "native Tcl/Tk 9.0.4 loads tkdnd 2.10.2",
     "source GUI registers NSPasteboardTypeFileURL on Original PDF pane",
     "Tcl list paths preserve Unicode, spaces, and braces",
-    "invalid and multiple-file drops leave current document intact",
+    "Before 0.8.0: invalid and multiple-file drops leave current document intact",
     "drop schedules existing load_path after native drag session",
     "User confirmed Finder drop of Unicode filename loads original PDF, second PDF replaces it, and protected PDF prompts for password."
   ],
   "code_signature": "ad-hoc; codesign --verify --deep --strict passed",
   "packaged_self_test": {
-    "app_version": "0.7.3",
+    "app_version": "0.9.0",
     "macos": "26.6.2",
     "architecture": "arm64",
     "checks": [
@@ -59,6 +59,7 @@
       "printable output",
       "page rendering",
       "50 headless worker starts/cancellations after Tk initialization",
+      "batch export of two PDFs through packaged workers",
       "20 expanded viewer open/render/close cycles without native fullscreen"
     ],
     "passed": true,
@@ -136,5 +137,243 @@
     "packaged_cycles": 20,
     "callback_errors": 0,
     "limitations": "Original crash not reproduced deterministically. User unsure of triggering action. Native green-button fullscreen and multi-monitor transitions not accepted."
+  },
+  "batch_export_checks": [
+    "Multiple-path Tcl drop routes to batch after native drag session",
+    "Duplicate inputs ignored; Unicode names and identical output basenames handled",
+    "Existing output bytes and original inputs preserved",
+    "Malformed input does not stop later valid PDFs",
+    "Wrong password retry, correct password export and skip tested",
+    "Live cancellation reaps worker and deletes temporary storage",
+    "Packaged two-file batch export preserves synthetic document text",
+    "Batch window opened with keyboard and visually inspected; actual Finder multi-file gesture not manually verified"
+  ],
+  "readability_review": {
+    "stitch_project": "https://stitch.withgoogle.com/projects/3998256195558143840",
+    "screens": [
+      "e6074f6399fe4619b6d7e3b7bf3feed7",
+      "9fcc3a4051c646dcb006caa6d986fc5d"
+    ],
+    "native_visual_checks": [
+      "comparison empty state",
+      "batch empty state and controls"
+    ],
+    "automated_security_summary_check": "Restricted input still explicitly shows password and restrictions removed",
+    "adopted": "Concise labels, progressive disclosure, action emphasis, batch counts and status colors",
+    "excluded": "Invented signature/form flattening and unsupported table data"
+  },
+  "inspector_validation": {
+    "packaged_self_test": {
+      "app_version": "0.10.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "regressions": [
+      "Read-only inline details opens/closes and is cleared on document replacement",
+      "Batch selection changes metadata without prompting for passwords",
+      "Authenticated batch details refresh without exposing the password",
+      "Clearing batch removes stale details"
+    ],
+    "native_visual_check": "Packaged app launched and synthetic PDF rendered. Native automation could not reliably activate Tk buttons; inspector visual acceptance remains unverified."
+  },
+  "page_tools_validation": {
+    "packaged_self_test": {
+      "app_version": "0.11.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "latest_ui_regression_tests": {
+      "passed": 6,
+      "failed": 0
+    },
+    "native_checks": [
+      "Tools menu opens Join and Split",
+      "Keyboard opens native PDF chooser",
+      "Two synthetic PDFs selected and inspected in Join",
+      "Synthetic source inspected and planned output listed in Split",
+      "Default layouts visually inspected"
+    ],
+    "automated_checks": [
+      "Every-page, N-page and custom-range split",
+      "File ordering, thumbnails and shared worker gate",
+      "Minimum window footer and shared menu",
+      "Multiple producer fixtures with exact rendered-page comparison",
+      "Annotations, links, page labels, bookmarks and metadata",
+      "Encrypted/signed/unsupported input rejection",
+      "Source changes and output collisions",
+      "Worker crash/timeout/cancel, atomic output receipt recovery, disk write failure"
+    ],
+    "pending_manual_checks": [
+      "Actual Finder drop gesture into new tools",
+      "Native pointer row drag gesture"
+    ],
+    "clean_pipeline_independent": true
+  },
+  "music_workspace_validation": {
+    "packaged_self_test": {
+      "app_version": "0.12.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "portable music project and editable Vietnamese PDF annotations through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "native_checks": [
+      "Workspace menu opens Service collection",
+      "Native chooser opens synthetic portable project",
+      "Vietnamese note rendered on page; original staff lines visible",
+      "Populated collection layout and reserved export footer inspected"
+    ],
+    "automated_checks": [
+      "Portable project round-trip after original removal",
+      "Editable printed and private notes",
+      "Rotated/cropped page note geometry",
+      "Note removal restores source pixels",
+      "Practice originals unchanged by collection edits",
+      "Save conflict and malformed archive rejection",
+      "Undo, unsaved prompts, handoffs, background jobs"
+    ],
+    "pending_manual_checks": [
+      "Actual Finder drop and pointer note/row drag gestures",
+      "Separate clean-Mac validation and Developer ID signing/notarization"
+    ]
+  },
+  "layout_validation": {
+    "packaged_self_test": {
+      "app_version": "0.13.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "portable music project and editable Vietnamese PDF annotations through packaged workers",
+        "page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "native_checks": [
+      "Workspace menu and project chooser opened synthetic v2 project",
+      "Export layout controls visually inspected",
+      "Final PDF preview opened and cover/page number rendered",
+      "Shared organizer populated with original and cropped/rotated page thumbnails; crop controls and footer visually inspected"
+    ],
+    "pdf_visual_checks": [
+      "Poppler-rendered Unicode cover",
+      "Linked contents with page destination",
+      "Vietnamese printed note and page number",
+      "Cropped and rotated landscape page with horizontal page number"
+    ],
+    "automated_checks": [
+      "Four source rotations with existing CropBox; geometry restoration",
+      "Reversible note coordinate mapping and editing after page transforms",
+      "Odd starts, front matter offsets and contents links",
+      "Number collision rejection on rotated pages",
+      "Flattened notes and foreign annotations; private notes absent",
+      "PNG/JPEG import; malformed and oversized image rejection",
+      "Lossless serialization no larger than baseline",
+      "Project v1 upgrade and v2 round trip",
+      "Organizer draft cancellation, last-page guard, Undo and export preview"
+    ],
+    "pending_manual_checks": [
+      "Actual Finder image-drop and native row/note-drag gestures",
+      "Physical duplex printing",
+      "Developer ID signing/notarization and separate clean-Mac acceptance deferred as previously agreed"
+    ]
   }
 }

@@ -14,7 +14,7 @@ from .core import Result
 
 class CleaningJob:
     def __init__(self, data: bytes, target: str, password: str, remove_overlays: bool,
-                 timeout: float = 300):
+                 timeout: float = 300, *, request_options=None):
         self.storage = TemporaryDirectory(prefix='preview-cleaner-')
         self.folder = Path(self.storage.name)
         self.closed = False
@@ -24,9 +24,9 @@ class CleaningJob:
         self.receiver = None
         self.buffer = b''
         try:
-            request = json.dumps(dict(target=target, password=password,
-                                      remove_overlays=remove_overlays)).encode('utf-8')
-            if len(request) > 4096:
+            request = json.dumps(request_options if request_options is not None else dict(
+                target=target, password=password, remove_overlays=remove_overlays)).encode('utf-8')
+            if len(request) > (4 * 1048576 if request_options is not None else 4096):
                 raise ValueError('Overlay text or password is too long.')
             (self.folder / 'input.pdf').write_bytes(data)
             self.receiver = (self.folder / 'events.jsonl').open('w+b', buffering=0)
@@ -73,8 +73,7 @@ class CleaningJob:
             message = json.loads(line)
             if message[0] == 'done':
                 try:
-                    result = Result((self.folder / 'output.pdf').read_bytes(),
-                                    json.loads((self.folder / 'report.json').read_text(encoding='utf-8')))
+                    result = self.read_result()
                     return messages + [('done', result)]
                 finally:
                     self.close(completed=True)
@@ -84,8 +83,12 @@ class CleaningJob:
             messages.append(tuple(message))
         if exited and self.receiver.tell() == (self.folder / 'events.jsonl').stat().st_size:
             self.close()
-            return messages + [('error', 'The PDF worker exited unexpectedly. No file was saved.')]
+            return messages + [('error', 'The PDF worker exited unexpectedly.')]
         return messages
+
+    def read_result(self):
+        return Result((self.folder / 'output.pdf').read_bytes(),
+                      json.loads((self.folder / 'report.json').read_text(encoding='utf-8')))
 
     def close(self, completed=False):
         if self.closed:

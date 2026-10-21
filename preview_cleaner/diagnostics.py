@@ -84,6 +84,10 @@ def run(report_path):
                 path.write_bytes(result.pdf_bytes)
                 try:
                     app.load_path(path)
+                    app.show_pdf_details("SECURITY & EXPORT")
+                    assert "SOURCE PRINTING" in app.pdf_details_window.text.get("1.0", "end")
+                    app.close_pdf_details()
+                    assert app.pdf_details_window is None
                     for index in range(20):
                         app.expand_page()
                         viewer = app.page_viewer
@@ -98,7 +102,115 @@ def run(report_path):
                         root.update()
                         assert app.page_viewer is None
                     assert not callback_errors, callback_errors
+                    second = Path(folder) / "Second synthetic.pdf"
+                    second.write_bytes(result.pdf_bytes)
+                    app.open_batch([path, second])
+                    queue = app.batch_window
+                    try:
+                        queue.toggle_inspector()
+                        queue.start(folder)
+                        deadline = time.monotonic() + 30
+                        while queue.running and time.monotonic() < deadline:
+                            root.update()
+                            time.sleep(0.01)
+                        assert not queue.running, "Batch timed out"
+                        assert len(queue.rows) == 2
+                        for row in queue.rows:
+                            assert row['output'], row['state']
+                            with open_pdf(Path(row['output']).read_bytes()) as exported:
+                                assert 'Preserve diagnostic text.' in exported[0].get_text()
+                        assert not callback_errors, callback_errors
+                        assert "Second synthetic.pdf" in queue.inspector.text.get("1.0", "end")
+                        report['checks'].append('inline PDF/security inspector and batch selection updates')
+                        report['checks'].append('batch export of two PDFs through packaged workers')
+                    finally:
+                        queue.close()
+                    # Exercise the independent page tools through the frozen worker.
+                    def wait_tool(tool):
+                        deadline = time.monotonic() + 30
+                        while tool.job and time.monotonic() < deadline:
+                            root.update()
+                            time.sleep(.01)
+                        assert tool.job is None, "Page tool timed out"
+                    join = app.open_page_tool('join')
+                    join.add_paths([path, second])
+                    wait_tool(join)
+                    assert all('error' not in row for row in join.rows), join.rows
+                    joined = Path(folder) / 'Joined.pdf'
+                    join.start(joined)
+                    wait_tool(join)
+                    assert len(join.outputs) == 1, join.status.get()
+                    with pymupdf.open(join.outputs[0]) as doc:
+                        assert len(doc) == 2
+                        assert all('Preserve diagnostic text.' in page.get_text() for page in doc)
+                    join.close()
+                    split = app.open_page_tool('split')
+                    split.add_paths([joined])
+                    wait_tool(split)
+                    split.start(folder)
+                    wait_tool(split)
+                    assert len(split.outputs) == 2, split.status.get()
+                    split.close()
+                    assert not callback_errors, callback_errors
+                    report['checks'].append('independent Join and Split GUI workflows through packaged workers')
+                    from .music_library import new_set, import_pdf, load_project
+                    import uuid
+                    music = app.open_music('service')
+                    try:
+                        music.add_paths([path, second])
+                        deadline = time.monotonic() + 30
+                        while (music.job or music.render_pending) and time.monotonic() < deadline:
+                            root.update()
+                            time.sleep(.01)
+                        assert len(music.model['tracks']) == 2, music.status.get()
+                        music.model['tracks'][0]['notes'].append(dict(id=uuid.uuid4().hex, page=0,
+                            text='Hát nhẹ — chuyển tông Rê trưởng', rect=[.05,.05,.8,.2], size=14,
+                            scope='service', print=True))
+                        project_path = Path(folder) / 'Synthetic service.pcset'
+                        music.save_project(project_path)
+                        wait_tool(music)
+                        assert project_path.exists(), music.status.get()
+                        reopened, fingerprint = load_project(project_path, music.session)
+                        assert reopened['tracks'][0]['notes'][0]['text'].startswith('Hát nhẹ')
+                        export_path = Path(folder) / 'Synthetic service.pdf'
+                        music.export(export_path)
+                        wait_tool(music)
+                        assert export_path.exists(), music.status.get()
+                        imported = import_pdf(export_path, music.session)
+                        assert len(imported['notes']) == 1
+                        assert imported['notes'][0]['text'].startswith('Hát nhẹ')
+                        report['checks'].append('portable music project and editable Vietnamese PDF annotations through packaged workers')
+                        music.organize()
+                        wait_tool(music)
+                        organizer = music.dialog
+                        assert organizer and organizer.images, music.status.get()
+                        organizer.tree.selection_set('0')
+                        organizer.rotate()
+                        wait_tool(music)
+                        organizer.apply()
+                        music.model['export_options'] = dict(cover=True, contents=True, odd_starts=True, flatten=True, optimize=True)
+                        layout_path = Path(folder) / 'Print layout.pdf'
+                        music.export(layout_path)
+                        wait_tool(music)
+                        assert layout_path.exists(), music.status.get()
+                        with pymupdf.open(layout_path) as layout:
+                            assert len(layout) == 5
+                            assert len(layout[1].get_links()) == 2
+                            assert not list(layout[2].annots())
+                        image_path = Path(folder) / 'Synthetic image.png'
+                        with pymupdf.open(export_path) as image_doc:
+                            image_doc[0].get_pixmap().save(image_path)
+                        music.add_paths([image_path])
+                        wait_tool(music)
+                        assert len(music.model['tracks']) == 3, music.status.get()
+                        report['checks'].append('page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers')
+
+                    finally:
+                        music.close(discard=True)
+
                 finally:
+                    for tool in list(app.tool_windows.values()):
+                        tool.close()
                     app.close_documents()
             report["viewer_lifecycle_stress"] = {"iterations": 20, "native_fullscreen": False}
             report["checks"].append("20 expanded viewer open/render/close cycles without native fullscreen")

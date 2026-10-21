@@ -93,6 +93,8 @@ def test_dropped_encrypted_pdf_reuses_password_checks(window, tmp_path, monkeypa
     if answer == "open-test":
         assert "printing blocked" in window.security_status.get()
         assert "restrictions removed" in window.security_status.get()
+        assert "print-restricted" in window.security_summary.get()
+        assert "password & restrictions removed" in window.security_summary.get()
 
 
 def test_loading_new_document_cancels_previous_job(window, tmp_path):
@@ -124,6 +126,13 @@ def test_pdf_details_are_read_only_and_close_on_replacement(window, tmp_path):
     content = details.get("1.0", "end")
     assert "metadata.pdf" in content and "SOURCE PRINTING" in content
     assert "CREATOR" in content and "PRODUCER" in content
+    assert isinstance(dialog, gui.ttk.Frame)
+    window.show_pdf_details("SECURITY & EXPORT")
+    assert window.pdf_details_window is dialog
+    window.close_pdf_details()
+    assert not dialog.winfo_exists()
+    window.show_pdf_details()
+    dialog = window.pdf_details_window
     window.load_path(source)
     assert not dialog.winfo_exists()
 
