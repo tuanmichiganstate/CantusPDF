@@ -240,3 +240,25 @@ and scrollable Detail / Fine detail views. **Approve quality** is required befor
 exporting a reduced-quality copy; any project/settings change requires review again.
 The project and source assets keep their original quality. Independent Clean,
 Join and Split exports retain their existing behavior.
+
+
+### Clearer page editing and quality review (0.16.0)
+
+Organize pages shows how many pages are selected; editing actions enable only
+after selection. **Exact margins (%)** expands numeric crop controls when needed.
+**Reset crop / rotation** makes the reset scope explicit.
+Export preview labels the current comparison/output view, reports size savings
+or growth, and offers **Use this quality** for reduced copies or **Done** for
+original quality.
+
+
+### Visual page organizer (0.17.0)
+
+Organize pages now uses a responsive thumbnail grid, with 12 thumbnails per group.
+Selected pages have teal outlines. Click a card to select; Shift-click or Shift+arrow
+keys selects a range, Command/Ctrl-click toggles individual selection, and
+Command/Ctrl+A selects all pages. Drag a card to reorder, or use Move earlier/later.
+Space toggles Keep/Omit, R rotates, and Delete omits. Omitted cards show Restore.
+Crop outlines show the retained area over the uncropped page, with project rotation
+applied. The right inspector edits the selection; exact margins remain collapsible.
+Apply counts changed pages, and Revert draft restores the state at dialog opening.

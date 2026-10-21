@@ -96,3 +96,40 @@ passed including automatic crop and approved reduced-quality export/comparison.
 The user confirmed actual native page reorder drag and Draw crop → Use crop on
 the synthetic project. This closes organizer drag acceptance; unrelated Finder
 image-drop and note-drag checks remain separately tracked.
+
+
+### 0.16.0 organizer and quality-review clarity
+Requested a fresh Google Stitch review in project
+https://stitch.withgoogle.com/projects/10708698212937161852 .
+The generation request returned HTTP 503; subsequent screen listing was empty.
+No new Stitch design or review is claimed. Local refinements follow the prior
+Stitch review's progressive-disclosure and action-hierarchy principles:
+selection count, disabled selection actions when empty, collapsed exact crop
+margins, explicit crop/rotation reset, current comparison/output label, percentage
+size savings or growth, and a primary Use this quality / Done action.
+PDF processing and project formats are unchanged.
+
+
+### Stitch retry succeeded
+At the user's request, generation was retried in project
+https://stitch.withgoogle.com/projects/10708698212937161852 and succeeded.
+Screen: `54538da927084cc49a889d2c77e951d8` (Preview Cleaner - Organize Pages).
+Screenshot: `projects/10708698212937161852/files/aaf4d9851da34e41a76face8872ec9f0`.
+Design system: `assets/e0893d07cffa4a07b70c2995cb3a0e28`.
+The screenshot was downloaded with Stitch and visually inspected. Useful proposals:
+thumbnail grid, stronger omitted/selected states, crop overlays, contextual inspector,
+and draft-change counts. These new proposals have not yet been implemented.
+The mockup invents deskew, measure-range recognition, cleaned-state categories,
+linked margins and example compression percentages; these are not app capabilities
+or measured results. Its suggested next explorations are a comparison sheet,
+interactive crop corner handles and ttk layout boilerplate.
+
+
+### 0.17.0 Stitch organizer implementation
+Applied screen 54538da927084cc49a889d2c77e951d8: responsive thumbnail cards, teal
+selection outlines, omitted badges with Restore, rotation badges, crop rectangles
+on uncropped thumbnails, selection inspector, changed-page count and Revert draft.
+Uses a keyboard-accessible Tk Canvas with bounded 12-page thumbnail groups and a
+scrolling inspector, rather than copying web-only UI or invented PDF capabilities.
+No deskew, measure recognition, Cleaned filter, aspect-ratio lock or fake size estimates.
+The existing quality comparison and actual file-size summary remain unchanged.

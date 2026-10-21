@@ -15,8 +15,8 @@ def test_page_organizer_keeps_order_crop_rotation_and_undo(app,tmp_path):
     assert isinstance(dialog,PageOrganizer)
     settle(app,work)
     assert len(dialog.images)==3
-    dialog.tree.selection_set('0');dialog.toggle();assert dialog.track['pages']==[1,2]
-    dialog.tree.selection_set('2');dialog.move(-1);assert dialog.track['pages']==[2,1]
+    dialog.grid.selection_set('0');dialog.toggle();assert dialog.track['pages']==[1,2]
+    dialog.grid.selection_set('2');dialog.move(-1);assert dialog.track['pages']==[2,1]
     dialog.rotate();settle(app,work)
     for var in dialog.margins:var.set('5')
     dialog.crop();settle(app,work)
@@ -93,7 +93,7 @@ def test_export_numbering_is_contextual_and_disabled_draft_does_not_block(app,tm
 def test_explicit_keep_omit_can_restore_pages_without_reordering(app,tmp_path):
     work=app.open_music('practice');open_pdf(app,work,tmp_path)
     work.organize();dialog=work.dialog;settle(app,work)
-    dialog.tree.selection_set('1');dialog.set_kept(False)
+    dialog.grid.selection_set('1');dialog.set_kept(False)
     assert dialog.track['pages']==[0,2]
     dialog.set_kept(True)
     assert dialog.track['pages']==[0,1,2]
@@ -119,7 +119,7 @@ def test_draw_crop_cancel_apply_and_auto_crop(app,tmp_path):
     from preview_cleaner.music_dialogs import CropEditor
     work=app.open_music('practice');open_pdf(app,work,tmp_path)
     work.organize();dialog=work.dialog;settle(app,work)
-    dialog.tree.selection_set('0','1')
+    dialog.grid.selection_set('0','1')
     # Use the same original-page response as the worker-backed draw action.
     from preview_cleaner.music_library import run_library
     result=run_library(dict(operation='library_crop_page',model=dialog.model,session=work.session,track=0,page=0),tmp_path,lambda _:None)
@@ -141,9 +141,8 @@ def test_downward_drag_reaches_target_position(app,tmp_path):
     work=app.open_music('practice');open_pdf(app,work,tmp_path)
     work.organize();dialog=work.dialog;settle(app,work)
     app.root.update()
-    dialog.drag_start='0'
-    box=dialog.tree.bbox('1')
-    dialog.drag_end(SimpleNamespace(y=box[1]+box[3]//2))
+    dialog.reorder_pages(0,1)
+    settle(app,work)
     assert dialog.track['pages']==[1,0,2]
     dialog.close();settle(app,work)
 
@@ -164,3 +163,66 @@ def test_reduced_export_requires_review_and_changes_invalidate_it(app,tmp_path):
     work.export(tmp_path/'Changed.pdf')
     assert isinstance(work.dialog,ExportDialog) and not (tmp_path/'Changed.pdf').exists()
     work.dialog.close();settle(app,work)
+
+
+def test_organizer_selection_controls_and_collapsed_exact_margins(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.organize();dialog=work.dialog;settle(app,work)
+    assert not dialog.crop_fields.winfo_manager()
+    assert all(str(control['state'])=='disabled' for control in dialog.selection_controls)
+    dialog.grid.selection_set('0','1');app.root.update()
+    assert '2 selected' in dialog.selection_label.get()
+    assert all(str(control['state'])=='normal' for control in dialog.selection_controls)
+    dialog.toggle_margins();app.root.update()
+    assert dialog.crop_fields.winfo_manager()=='pack'
+    dialog.grid.selection_remove('0','1');app.root.update()
+    assert all(str(control['state'])=='disabled' for control in dialog.selection_controls)
+    dialog.close();settle(app,work)
+
+
+def test_quality_summary_distinguishes_savings_growth_and_equality():
+    from preview_cleaner.music_dialogs import size_summary
+    assert '50% smaller' in size_summary(2048,1024)
+    assert '50% larger' in size_summary(2048,3072)
+    assert 'Original quality may be preferable' in size_summary(2048,3072)
+    assert 'Same size' in size_summary(2048,2048)
+
+
+def test_grid_pointer_restore_reorder_and_draft_revert(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    before=deepcopy(work.model)
+    work.organize();dialog=work.dialog;settle(app,work);app.root.update()
+    grid=dialog.grid
+    def event(page,footer=False):
+        x,y,w,h=grid.cards[page]
+        return SimpleNamespace(x=x+w/2,y=y+(h-15 if footer else 45)-grid.canvasy(0),state=0)
+    grid.pointer_down(event(0));grid.pointer_up(event(0,True))
+    # A footer click, not a drag from the card body.
+    grid.pointer_down(event(0,True));grid.pointer_up(event(0,True))
+    assert 0 not in dialog.track['pages']
+    assert dialog.changed_pages()>0
+    grid.pointer_down(event(0,True));grid.pointer_up(event(0,True))
+    assert 0 in dialog.track['pages']
+    grid.pointer_down(event(0));grid.pointer_move(event(1));grid.pointer_up(event(1))
+    settle(app,work)
+    assert dialog.track['pages']==[1,0,2]
+    dialog.revert();settle(app,work)
+    assert dialog.changed_pages()==0 and dialog.track['pages']==[0,1,2]
+    dialog.close();settle(app,work)
+    assert work.model==before
+
+
+def test_grid_shift_selection_keyboard_and_minimum_inspector_scroll(app,tmp_path):
+    work=app.open_music('practice');open_pdf(app,work,tmp_path)
+    work.organize();dialog=work.dialog;settle(app,work)
+    dialog.window.geometry('960x700');app.root.update()
+    grid=dialog.grid;grid.focus_page=0;grid.selection_set(0)
+    grid.navigate(1,SimpleNamespace(state=1))
+    assert grid.selection()==[0,1]
+    dialog.toggle_margins();app.root.update()
+    control=dialog.selection_controls[10]
+    control.focus_force();app.root.update()
+    assert control.winfo_rooty()>=dialog.inspector_canvas.winfo_rooty()
+    assert control.winfo_rooty()+control.winfo_height()<=dialog.inspector_canvas.winfo_rooty()+dialog.inspector_canvas.winfo_height()+2
+    assert dialog.apply_button.winfo_rooty()+dialog.apply_button.winfo_height()<=dialog.window.winfo_rooty()+dialog.window.winfo_height()
+    dialog.close();settle(app,work)

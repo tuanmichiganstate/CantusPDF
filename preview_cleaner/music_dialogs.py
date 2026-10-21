@@ -2,6 +2,7 @@
 from copy import deepcopy
 import tkinter as tk
 from tkinter import ttk
+from .page_grid import PageGrid
 from .pdf_layout import DEFAULT_EXPORT, export_options, validate_edits, layout_plan
 
 
@@ -42,87 +43,131 @@ class WorkspaceDialog:
 
 class PageOrganizer(WorkspaceDialog):
     def __init__(self, owner):
-        super().__init__(owner,'Organize pages · crop / rotate','890x730')
-        self.window.minsize(760,620)
+        super().__init__(owner,'Organize pages · crop / rotate','1140x800')
+        self.window.minsize(960,700)
         self.model=deepcopy(owner.model)
         self.track=self.model['tracks'][owner.track_index]
+        self.original=deepcopy(self.track)
         self.order=list(self.track['pages'])+[p for p in range(self.track['count']) if p not in self.track['pages']]
-        self.images={}
-        self.batch=0
-        frame=ttk.Frame(self.window,padding=14); frame.pack(fill='both',expand=True)
-        ttk.Label(frame,text='Arrange your pages',style='Section.TLabel').pack(anchor='w')
-        footer=ttk.Frame(frame);footer.pack(side='bottom',fill='x',pady=(8,0))
+        self.images={};self.selection_controls=[];self.batch=0
+        self.selection_label=tk.StringVar(self.window,'Select pages to edit')
+        frame=ttk.Frame(self.window,padding=14);frame.pack(fill='both',expand=True)
+        header=ttk.Frame(frame);header.pack(fill='x',pady=(0,10))
+        ttk.Label(header,text='Organize pages',style='Title.TLabel').pack(side='left')
+        ttk.Label(header,text=self.track['source_name'],style='Muted.TLabel').pack(side='left',padx=14)
+        footer=ttk.Frame(frame);footer.pack(side='bottom',fill='x',pady=(10,0))
         ttk.Button(footer,text='Cancel',command=self.close).pack(side='left')
-        ttk.Button(footer,text='Apply pages',command=self.apply,style='Primary.TButton').pack(side='right')
-        ttk.Label(frame,textvariable=self.status,wraplength=820).pack(side='bottom',fill='x',pady=4)
-        crop=ttk.LabelFrame(frame,text='Crop margins (%) · selected pages',padding=8);crop.pack(side='bottom',fill='x',pady=8)
-        self.margins=[]
+        self.apply_button=ttk.Button(footer,text='Apply pages',command=self.apply,style='Primary.TButton')
+        self.apply_button.pack(side='right')
+        ttk.Button(footer,text='Revert draft',command=self.revert).pack(side='right',padx=8)
+        ttk.Label(frame,textvariable=self.status,wraplength=900).pack(side='bottom',fill='x',pady=4)
+        body=ttk.Frame(frame);body.pack(fill='both',expand=True)
+        shell=ttk.Frame(body,width=280,padding=(10,0,0));shell.pack(side='right',fill='y');shell.pack_propagate(False)
+        self.inspector_canvas=tk.Canvas(shell,highlightthickness=0,background='#f7f9fb')
+        sidebar_scroll=ttk.Scrollbar(shell,command=self.inspector_canvas.yview);sidebar_scroll.pack(side='right',fill='y')
+        self.inspector_canvas.configure(yscrollcommand=sidebar_scroll.set);self.inspector_canvas.pack(fill='both',expand=True)
+        inspector=ttk.Frame(self.inspector_canvas)
+        item=self.inspector_canvas.create_window(0,0,anchor='nw',window=inspector)
+        inspector.bind('<Configure>',lambda e:self.inspector_canvas.configure(scrollregion=self.inspector_canvas.bbox('all')))
+        self.inspector_canvas.bind('<Configure>',lambda e:self.inspector_canvas.itemconfigure(item,width=e.width))
+        ttk.Label(inspector,text='Selection',style='Section.TLabel').pack(anchor='w')
+        ttk.Label(inspector,textvariable=self.selection_label,wraplength=240,style='Muted.TLabel').pack(fill='x',pady=10)
+        for label,command in [('Keep selected',lambda:self.set_kept(True)),('Omit selected',lambda:self.set_kept(False)),('Rotate 90°',self.rotate),('Draw crop…',self.draw_crop),('Detect white margins',self.auto_crop),('Reset crop / rotation',self.reset)]:
+            button=ttk.Button(inspector,text=label,command=command);button.pack(fill='x',pady=3)
+            self.selection_controls.append(button)
+        self.crop_section=ttk.Frame(inspector);self.crop_section.pack(fill='x',pady=10)
+        self.crop_toggle=ttk.Button(self.crop_section,text='▸ Exact margins (%)',command=self.toggle_margins,style='Quiet.TButton');self.crop_toggle.pack(fill='x')
+        self.crop_fields=ttk.Frame(self.crop_section);self.margins=[]
         for label in ('Left','Top','Right','Bottom'):
-            ttk.Label(crop,text=label).pack(side='left')
+            row=ttk.Frame(self.crop_fields);row.pack(fill='x',pady=2)
+            ttk.Label(row,text=label).pack(side='left')
             var=tk.StringVar(self.window,'0');self.margins.append(var)
-            ttk.Entry(crop,textvariable=var,width=5).pack(side='left',padx=(4,10))
-        ttk.Button(crop,text='Crop selected',command=self.crop).pack(side='left')
-        ttk.Button(crop,text='Reset selected',command=self.reset).pack(side='right')
-        crop_actions=ttk.Frame(frame);crop_actions.pack(side='bottom',fill='x')
-        ttk.Button(crop_actions,text='Draw crop…',command=self.draw_crop).pack(side='left')
-        ttk.Button(crop_actions,text='Detect white margins',command=self.auto_crop).pack(side='left',padx=6)
-        actions=ttk.Frame(frame);actions.pack(fill='x',pady=8)
-        for label,command in [('Select all',self.select_all),('Keep',lambda:self.set_kept(True)),('Omit',lambda:self.set_kept(False)),('↑',lambda:self.move(-1)),('↓',lambda:self.move(1)),('Rotate ↻',self.rotate)]:
-            ttk.Button(actions,text=label,command=command,width=9 if len(label)>2 else 3).pack(side='left',padx=(0,5))
-        paging=ttk.Frame(frame);paging.pack(side='bottom',fill='x')
-        ttk.Button(paging,text='‹ Thumbnails',command=lambda:self.change_batch(-1)).pack(side='left')
+            entry=ttk.Entry(row,textvariable=var,width=7);entry.pack(side='right');self.selection_controls.append(entry)
+        exact=ttk.Button(self.crop_fields,text='Set margins',command=self.crop);exact.pack(fill='x',pady=3);self.selection_controls.append(exact)
+        ttk.Label(inspector,text='Crop outline shows the area to keep. Originals stay unchanged.',wraplength=240,style='Muted.TLabel').pack(fill='x',pady=8)
+        left=ttk.Frame(body);left.pack(fill='both',expand=True)
+        actions=ttk.Frame(left);actions.pack(fill='x',pady=(0,8))
+        ttk.Button(actions,text='Select all',command=self.select_all).pack(side='left')
+        for label,step in [('Move earlier',-1),('Move later',1)]:
+            button=ttk.Button(actions,text=label,command=lambda d=step:self.move(d));button.pack(side='left',padx=4);self.selection_controls.append(button)
+        paging=ttk.Frame(left);paging.pack(side='bottom',fill='x',pady=(8,0))
+        self.previous_batch=ttk.Button(paging,text='‹ Previous',command=lambda:self.change_batch(-1));self.previous_batch.pack(side='left')
         self.batch_label=ttk.Label(paging);self.batch_label.pack(side='left',padx=8)
-        ttk.Button(paging,text='Thumbnails ›',command=lambda:self.change_batch(1)).pack(side='left')
-        ttk.Style(self.window).configure('Pages.Treeview',rowheight=148)
-        table=ttk.Frame(frame);table.pack(fill='both',expand=True)
-        self.tree=ttk.Treeview(table,columns=('state','edit'),show='tree headings',selectmode='extended',style='Pages.Treeview')
-        self.tree.heading('#0',text='Page thumbnail');self.tree.column('#0',width=250)
-        self.tree.heading('state',text='Output');self.tree.column('state',width=120)
-        self.tree.heading('edit',text='Changes');self.tree.column('edit',width=230)
-        scroll=ttk.Scrollbar(table,command=self.tree.yview);scroll.pack(side='right',fill='y')
-        self.tree.configure(yscrollcommand=scroll.set);self.tree.pack(fill='both',expand=True)
-        self.tree.tag_configure('omitted', foreground='#7a8998')
-        self.tree.bind('<ButtonPress-1>',lambda e:setattr(self,'drag_start',self.tree.identify_row(e.y)),add='+')
-        self.tree.bind('<ButtonRelease-1>',self.drag_end,add='+')
-        self.tree.bind('<<TreeviewSelect>>',self.selection_changed)
-        self.tree.bind('<space>', lambda event: self.key_action(self.toggle))
-        self.tree.bind('<r>', lambda event: self.key_action(self.rotate))
-        self.tree.bind('<BackSpace>', lambda event: self.key_action(lambda: self.set_kept(False)))
-        self.tree.bind('<Delete>', lambda event: self.key_action(lambda: self.set_kept(False)))
+        self.next_batch=ttk.Button(paging,text='Next ›',command=lambda:self.change_batch(1));self.next_batch.pack(side='left')
+        scroll=ttk.Scrollbar(left);scroll.pack(side='right',fill='y')
+        self.grid=PageGrid(left,self.selection_changed,self.reorder_pages,self.toggle_card,yscrollcommand=scroll.set)
+        scroll.configure(command=self.grid.yview);self.grid.pack(fill='both',expand=True)
+        self.grid.bind('<space>',lambda e:self.key_action(self.toggle))
+        self.grid.bind('<r>',lambda e:self.key_action(self.rotate))
+        for key in ('BackSpace','Delete'):self.grid.bind('<'+key+'>',lambda e:self.key_action(lambda:self.set_kept(False)))
+        def reveal(event):
+            self.window.update_idletasks()
+            canvas=self.inspector_canvas;height=max(1,inspector.winfo_height())
+            top=event.widget.winfo_rooty()-inspector.winfo_rooty();bottom=top+event.widget.winfo_height()
+            if top<canvas.canvasy(0):canvas.yview_moveto(top/height)
+            elif bottom>canvas.canvasy(0)+canvas.winfo_height():canvas.yview_moveto((bottom-canvas.winfo_height())/height)
+        def bind_scroll(widget):
+            widget.bind('<FocusIn>',reveal,add='+')
+            widget.bind('<MouseWheel>',lambda e:self.inspector_canvas.yview_scroll(-1 if e.delta>0 else 1,'units'),add='+')
+            for child in widget.winfo_children():bind_scroll(child)
+        bind_scroll(inspector)
         self.refresh();self.thumbnails()
+
+    def revert(self):
+        if self.owner.job:return
+        self.track.clear();self.track.update(deepcopy(self.original))
+        self.order=list(self.track['pages'])+[p for p in range(self.track['count']) if p not in self.track['pages']]
+        self.images.clear();self.batch=0;self.refresh();self.thumbnails()
+
+    def changed_pages(self):
+        before=self.original['pages'];after=self.track['pages']
+        def state(track,p):
+            edit=track.get('page_edits',{}).get(str(p),{})
+            return (edit.get('crop',[0,0,1,1]),edit.get('rotation',0))
+        return sum((p in before)!=(p in after) or (p in before and p in after and before.index(p)!=after.index(p)) or state(self.original,p)!=state(self.track,p) for p in range(self.track['count']))
+
+    def toggle_card(self,page):
+        self.set_kept(page not in self.track['pages'])
+
+    def toggle_margins(self):
+        if self.crop_fields.winfo_manager():
+            self.crop_fields.pack_forget();self.crop_toggle.configure(text='▸ Exact margins (%)')
+        else:
+            self.crop_fields.pack(fill='x');self.crop_toggle.configure(text='▾ Exact margins (%)')
 
     def key_action(self, action):
         action()
         return 'break'
 
     def selected(self):
-        return [int(p) for p in self.tree.selection()]
+        return self.grid.selection()
 
     def selection_changed(self,_=None):
         pages=self.selected()
+        self.selection_label.set(f'{len(pages)} selected · edits apply to these pages' if pages else 'Select pages to edit · drag cards to reorder')
+        for control in self.selection_controls:control.configure(state='normal' if pages else 'disabled')
         if pages:
             crop=self.track.get('page_edits',{}).get(str(pages[0]),{}).get('crop',[0,0,1,1])
             for var,value in zip(self.margins,(crop[0],crop[1],1-crop[2],1-crop[3])):
                 var.set(f'{value*100:.2f}')
 
     def refresh(self, selection=()):
-        scroll = self.tree.yview()[0] if self.tree.get_children() else 0
-        self.tree.delete(*self.tree.get_children())
-        for page in self.order:
-            edit=self.track.get('page_edits',{}).get(str(page),{})
-            label=('Crop · ' if edit.get('crop') else '')+f"{edit.get('rotation',0)}°"
-            self.tree.insert('','end',iid=str(page),text=f'  Page {page+1}',image=self.images.get(page,''),values=('Included' if page in self.track['pages'] else 'Omitted',label), tags=() if page in self.track['pages'] else ('omitted',))
-        for page in selection:
-            self.tree.selection_add(str(page))
-        self.status.set(f"{len(self.track['pages'])} kept · {self.track['count']-len(self.track['pages'])} omitted. Crop hides edges; Reset restores them.")
-        self.tree.yview_moveto(scroll)
-        self.batch_label.configure(text=f'{self.batch*12+1}–{min(self.batch*12+12,len(self.order))} / {len(self.order)}')
+        visible=self.order[self.batch*12:self.batch*12+12]
+        self.grid.update_pages(self.order,visible,self.track,self.images,selection)
+        changes=self.changed_pages()
+        self.status.set(f"{len(self.track['pages'])} kept · {self.track['count']-len(self.track['pages'])} omitted · {changes} pages changed")
+        self.apply_button.configure(text=f'Apply pages ({changes})' if changes else 'Done')
+        self.selection_changed()
+        self.batch_label.configure(text=f'{self.batch*12+1}–{min(self.batch*12+12,len(self.order))} of {len(self.order)}')
+        self.previous_batch.configure(state='normal' if self.batch else 'disabled')
+        self.next_batch.configure(state='normal' if (self.batch+1)*12<len(self.order) else 'disabled')
 
     def thumbnails(self):
         if self.owner.job:
             return
-        pages=self.order[self.batch*12:self.batch*12+12]
-        self.launch(dict(operation='library_thumbnails',model=self.model,track=self.owner.track_index,pages=pages),self.receive)
+        pages=[p for p in self.order[self.batch*12:self.batch*12+12] if p not in self.images]
+        if not pages:return
+        self.launch(dict(operation='library_thumbnails',model=self.model,track=self.owner.track_index,pages=pages,uncropped=True),self.receive)
 
     def receive(self,result):
         selected=self.selected()
@@ -133,10 +178,10 @@ class PageOrganizer(WorkspaceDialog):
     def change_batch(self,step):
         if self.owner.job:return
         self.batch=max(0,min((len(self.order)-1)//12,self.batch+step))
-        self.tree.see(str(self.order[self.batch*12]));self.refresh(self.selected());self.thumbnails()
+        self.grid.yview_moveto(0);self.refresh(self.selected());self.thumbnails()
 
     def select_all(self):
-        self.tree.selection_set(self.tree.get_children())
+        self.grid.select_all()
 
     def set_kept(self, keep):
         if self.owner.job:
@@ -173,16 +218,15 @@ class PageOrganizer(WorkspaceDialog):
             if self.order[i] in chosen and 0<=target<len(self.order) and self.order[target] not in chosen:
                 self.order[i],self.order[target]=self.order[target],self.order[i]
         self.track['pages']=[p for p in self.order if p in self.track['pages']]
-        self.refresh(selected)
+        self.refresh(selected);self.thumbnails()
 
-    def drag_end(self,event):
+    def reorder_pages(self,source,target):
         if self.owner.job:return
-        source=getattr(self,'drag_start','');target=self.tree.identify_row(event.y)
-        if source and target and source!=target:
-            position=self.order.index(int(target))
-            self.order.remove(int(source));self.order.insert(position,int(source))
-            self.track['pages']=[p for p in self.order if p in self.track['pages']]
-            self.refresh([int(source)])
+        if source not in self.order or target not in self.order or source==target:return
+        position=self.order.index(target)
+        self.order.remove(source);self.order.insert(position,source)
+        self.track['pages']=[p for p in self.order if p in self.track['pages']]
+        self.refresh([source]);self.thumbnails()
 
     def rotate(self):
         if self.owner.job:return
@@ -354,6 +398,13 @@ class ExportDialog(WorkspaceDialog):
         ExportPreview(self.owner,result['pages'],result)
 
 
+def size_summary(original, output):
+    difference=original-output
+    change=f'{abs(difference)/max(1,original):.0%}'
+    outcome=f'{change} smaller' if difference>0 else f'{change} larger — Original quality may be preferable' if difference<0 else 'Same size'
+    return f'{original/1024:.0f} KB → {output/1024:.0f} KB · {outcome}'
+
+
 class ExportPreview(WorkspaceDialog):
     def __init__(self,owner,count,details=None):
         super().__init__(owner,'Final PDF preview','900x850')
@@ -367,6 +418,8 @@ class ExportPreview(WorkspaceDialog):
         self.label=ttk.Label(bar);self.label.pack(side='left',padx=8)
         ttk.Button(bar,text='›',command=lambda:self.go(1)).pack(side='left')
         ttk.Button(bar,text='Close preview',command=self.close).pack(side='right')
+        self.view_label=tk.StringVar(self.window)
+        ttk.Label(frame,textvariable=self.view_label,style='Section.TLabel').pack(anchor='w',pady=(0,8))
         controls=ttk.Frame(frame);controls.pack(side='top',fill='x')
         self.original_control=ttk.Checkbutton(controls,text='Original quality',variable=self.original,command=self.render)
         self.original_control.pack(side='left')
@@ -374,8 +427,10 @@ class ExportPreview(WorkspaceDialog):
         self.zoom_control=zoom
         zoom.pack(side='left',padx=8);zoom.bind('<<ComboboxSelected>>',lambda e:self.render())
         if details:
-            ttk.Label(controls,text=f"Original {details['original_size']/1024:.0f} KB → Output {details['size']/1024:.0f} KB").pack(side='left')
-        self.approve_button=ttk.Button(bar,text='Approve quality',command=self.approve)
+            self.size_summary=size_summary(details['original_size'],details['size'])
+            ttk.Label(frame,text=self.size_summary,style='Muted.TLabel').pack(anchor='w',pady=8)
+        reduced=export_options(owner.model)['image_quality']!='Original'
+        self.approve_button=ttk.Button(bar,text='Use this quality' if reduced else 'Done',command=self.approve,style='Primary.TButton')
         self.approve_button.pack(side='right',padx=6)
         area=ttk.Frame(frame);area.pack(fill='both',expand=True)
         self.canvas=tk.Canvas(area,background='#e9eef3',highlightthickness=0)
@@ -387,7 +442,8 @@ class ExportPreview(WorkspaceDialog):
 
     def render(self):
         if self.owner.job:return
-        self.label.configure(text=f'{self.page+1} / {self.count}')
+        self.label.configure(text=f'Page {self.page+1} of {self.count}')
+        self.view_label.set('Original quality · comparison' if self.original.get() else 'Output · '+export_options(self.review_model)['image_quality'])
         size=1600 if self.zoom.get()=='Detail' else 3200 if self.zoom.get()=='Fine detail' else None
         if self.launch(dict(operation='library_preview_page',model=self.owner.model,page=self.page,original=self.original.get(),
             width=size or max(100,self.canvas.winfo_width()-20),height=size or max(100,self.canvas.winfo_height()-20)),self.receive):

@@ -1,4 +1,4 @@
-# Coding-agent handoff — Preview Cleaner 0.15.0
+# Coding-agent handoff — Preview Cleaner 0.17.0
 
 ## Objective
 
@@ -6,7 +6,7 @@ Turn the supplied working source prototype into a reliable local macOS/Windows d
 
 ## Implemented baseline
 
-`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `gui.py` provides drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize Tk in worker.py. `__main__.py` is the CLI. The suite includes 207 automated cases and a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
+`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `gui.py` provides drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize Tk in worker.py. `__main__.py` is the CLI. The suite includes 211 automated cases and a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
 
 The reference sample is a 12-page PDF whose page wrapper separately invokes the score Form XObject, draws a 150-pt diagonal `Preview` text object, then draws its edition footer. Only the target text-show operand is changed. Do not remove the entire page stream, Form XObject, font resource, gray content, or watermark bounding rectangle.
 
@@ -93,3 +93,21 @@ Final preview keeps original-quality and output files for comparison, sizes and 
 The UI requires approval of the exact model before reduced-quality export; review
 is ephemeral and invalidated by any model change. Serialization verification compares
 to the deliberately reduced document, not pixel equality with the original scan.
+
+
+### 0.16.0 local readability refinement
+Organizer selection state controls all editing buttons and exact-margin inputs;
+selection_changed also runs after refresh. Numeric margins are collapsed by
+default. Quality-preview labels distinguish output from original comparison;
+size_summary handles smaller, larger and equal output. New Stitch generation was
+unavailable (HTTP 503); see UI_DESIGN for accurate provenance.
+
+
+### 0.17.0 visual page grid
+`page_grid.py` owns bounded thumbnail-card rendering, multi-selection, keyboard
+navigation and pointer reorder/Keep/Restore callbacks. PageOrganizer retains its
+draft model and processing handlers. `library_thumbnails(uncropped=True)` removes
+project crop but retains rotation for the image; normalized crop overlays map through
+that rotation in the grid. Other thumbnail callers retain the previous behavior.
+Revert draft restores the snapshot at dialog entry, not the immutable original PDF.
+The inspector scrolls to focused fields and Apply remains in a reserved footer.

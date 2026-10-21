@@ -1,6 +1,6 @@
 {
-  "built_at_utc": "2026-10-21T15:09:25.761500+00:00",
-  "app_version": "0.15.0",
+  "built_at_utc": "2026-10-21T15:35:54.526757+00:00",
+  "app_version": "0.17.0",
   "architecture": "arm64",
   "macos_tested": "26.6.2",
   "minimum_macos": "26.0",
@@ -9,10 +9,10 @@
   "dependency_lock": "requirements-build-macos.txt",
   "app": "dist/PreviewCleaner.app",
   "archive": "dist/PreviewCleaner-macOS-arm64.zip",
-  "archive_bytes": 36055725,
-  "archive_sha256": "087ebbf7a0bc6ba77776d69c227b85cdecc693e867fd0e1b244c0f46dbb4c33d",
+  "archive_bytes": 36066934,
+  "archive_sha256": "31504686f98c7837c71256f3cb4d0a4ece7e22286bb5101ba2bcb5a9fc8aae1e",
   "automated_tests": {
-    "passed": 207,
+    "passed": 211,
     "failed": 0,
     "warnings": 5
   },
@@ -488,5 +488,79 @@
       "Bitonal images are not downsampled",
       "Reduced-quality exports may be larger for some PDFs; preview shows both sizes"
     ]
+  },
+  "organizer_ux_validation": {
+    "packaged_self_test": {
+      "app_version": "0.16.0",
+      "macos": "26.6.2",
+      "architecture": "arm64",
+      "checks": [
+        "native drag-and-drop library and file-drop registration",
+        "spawned PDF worker",
+        "responsive Tk event loop",
+        "password authentication",
+        "overlay removal and text preservation",
+        "printable output",
+        "page rendering",
+        "50 headless worker starts/cancellations after Tk initialization",
+        "inline PDF/security inspector and batch selection updates",
+        "batch export of two PDFs through packaged workers",
+        "independent Join and Split GUI workflows through packaged workers",
+        "portable music project and editable Vietnamese PDF annotations through packaged workers",
+        "page organizer, rotated print layout, linked contents, odd starts, flattened notes and image import through packaged workers",
+        "automatic crop and reviewed reduced-image export with original-quality comparison through packaged workers",
+        "20 expanded viewer open/render/close cycles without native fullscreen"
+      ],
+      "passed": true,
+      "worker_cancellation_stress": {
+        "iterations": 50,
+        "exit_codes": {
+          "-15": 50
+        },
+        "unexpected_exits": 0
+      },
+      "viewer_lifecycle_stress": {
+        "iterations": 20,
+        "native_fullscreen": false
+      }
+    },
+    "stitch_project": "https://stitch.withgoogle.com/projects/10708698212937161852",
+    "stitch_status": "Generation failed HTTP 503; two later screen listings empty. No new design claimed.",
+    "native_checks": [
+      "Synthetic project opened in packaged app",
+      "Organizer empty-selection disabled actions, collapsed exact margins and complete footer visually verified"
+    ],
+    "automated_checks": [
+      "Selection-dependent controls and expanded margin fields",
+      "File-size savings, growth and equality summary",
+      "Existing crop, reorder, original/output comparison and review gate regressions"
+    ],
+    "stitch_retry": {
+      "status": "Succeeded on user-requested retry",
+      "screen": "54538da927084cc49a889d2c77e951d8",
+      "screenshot_inspected": true,
+      "implementation": "New design proposals not yet implemented; packaged 0.16.0 unchanged"
+    }
+  },
+  "page_grid_validation": {
+    "stitch_project": "10708698212937161852",
+    "stitch_screen": "54538da927084cc49a889d2c77e951d8",
+    "packaged_diagnostic_passed": true,
+    "packaged_diagnostic_report": "/tmp/pc017-final-diagnostic.json",
+    "automated_checks": [
+      "Thumbnail selection and range selection",
+      "Keep and Restore via card footer",
+      "Drag reorder in both directions",
+      "Revert draft preserves source project",
+      "Minimum-window inspector focus and footer visibility"
+    ],
+    "native_visual_checks": [
+      "Eight-page synthetic project with crop and rotated page",
+      "Grid, inspector, and footer layout inspected in packaged app"
+    ],
+    "limitations": [
+      "Native pointer automation did not reliably select cards; drag gestures covered by Tk event tests, not a new manual acceptance test."
+    ],
+    "omitted_thumbnail_fix": "Removed macOS opaque stipple overlay; retain thumbnail with omitted label and dashed card border."
   }
 }

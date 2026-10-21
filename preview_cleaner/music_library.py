@@ -453,11 +453,13 @@ def run_library(options, root, send):
             return dict(crops=crops, outputs=[])
     if operation == 'library_thumbnails':
         track = model['tracks'][options['track']]
+        if options.get('uncropped'):
+            track=dict(track,page_edits={key:dict(rotation=edit.get('rotation',0)) for key,edit in track.get('page_edits',{}).items()})
         images = []
         with prepare_track(track, session, private=True) as doc:
             for index in options['pages']:
                 page = doc[index]
-                scale = min(110 / page.rect.width, 140 / page.rect.height)
+                scale = min((150 if options.get('uncropped') else 110) / page.rect.width, (200 if options.get('uncropped') else 140) / page.rect.height)
                 pix = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=False)
                 images.append(dict(page=index, image=base64.b64encode(pix.tobytes('png')).decode()))
         return dict(images=images, outputs=[])

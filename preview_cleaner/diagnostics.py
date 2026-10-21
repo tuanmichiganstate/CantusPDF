@@ -184,7 +184,7 @@ def run(report_path):
                         wait_tool(music)
                         organizer = music.dialog
                         assert organizer and organizer.images, music.status.get()
-                        organizer.tree.selection_set('0')
+                        organizer.grid.selection_set('0')
                         organizer.rotate()
                         wait_tool(music)
                         organizer.auto_crop()
