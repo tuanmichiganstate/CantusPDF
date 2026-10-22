@@ -4,6 +4,7 @@
 
 [Setup]
 AppId=CantusPDF{param:BuildCheck|}
+UsePreviousLanguage=no
 AppName=Cantus PDF
 AppVersion={#AppVersion}
 AppPublisher=Cantus PDF
