@@ -5,8 +5,8 @@ from .pdf_layout import map_rect
 
 class PageGrid(tk.Canvas):
     def __init__(self, parent, changed, reorder, toggle, **kwargs):
-        super().__init__(parent, background='#e9eef3', highlightthickness=2,
-                         highlightbackground='#dce3ea', highlightcolor='#0d7682', takefocus=True, **kwargs)
+        super().__init__(parent, background='#eae6dc', highlightthickness=2,
+                         highlightbackground='#d9d7cc', highlightcolor='#2e6253', takefocus=True, **kwargs)
         self.changed,self.reorder,self.toggle=changed,reorder,toggle
         self.order=[];self.visible=[];self.chosen=set();self.cards={};self.focus_page=None
         self.images={};self.track={};self.columns=1;self.press=None
@@ -49,12 +49,12 @@ class PageGrid(tk.Canvas):
             x=(i%self.columns)*cell+8;y=(i//self.columns)*280+8;w=cell-16
             self.cards[page]=(x,y,w,264)
             selected=page in self.chosen;included=page in kept
-            edge='#0d7682' if selected else '#aebcc7'
-            self.create_rectangle(x,y,x+w,y+264,fill='white' if included else '#e1e6eb',outline=edge,width=3 if selected else 1,dash=() if included else (4,3))
-            self.create_text(x+10,y+15,anchor='w',text=f'Page {page+1}',fill='#123a56',font=('Helvetica Neue',12,'bold'))
+            edge='#2e6253' if selected else '#aebcc7'
+            self.create_rectangle(x,y,x+w,y+264,fill='white' if included else '#e2e0d7',outline=edge,width=3 if selected else 1,dash=() if included else (4,3))
+            self.create_text(x+10,y+15,anchor='w',text=f'Page {page+1}',fill='#263f38',font=('Helvetica Neue',12,'bold'))
             edit=self.track.get('page_edits',{}).get(str(page),{})
             angle=edit.get('rotation',0)
-            self.create_text(x+w-10,y+15,anchor='e',text=f'{angle}°' if angle else '',fill='#0d7682')
+            self.create_text(x+w-10,y+15,anchor='e',text=f'{angle}°' if angle else '',fill='#2e6253')
             image=self.images.get(page)
             if image:
                 iw,ih=image.width(),image.height();ix=x+(w-iw)/2;iy=y+32+(200-ih)/2
@@ -63,15 +63,15 @@ class PageGrid(tk.Canvas):
                 if crop!=[0,0,1,1]:
                     l,t,r,b=crop
                     a,c,ww,hh=map_rect([l,t,r-l,b-t],{'rotation':angle})
-                    self.create_rectangle(ix+a*iw,iy+c*ih,ix+(a+ww)*iw,iy+(c+hh)*ih,outline='#0d7682',width=2,dash=(4,3))
-            else:self.create_text(x+w/2,y+125,text='Loading…',fill='#657789')
+                    self.create_rectangle(ix+a*iw,iy+c*ih,ix+(a+ww)*iw,iy+(c+hh)*ih,outline='#2e6253',width=2,dash=(4,3))
+            else:self.create_text(x+w/2,y+125,text='Loading…',fill='#62675c')
             if not included:
-                self.create_rectangle(x+8,y+103,x+w-8,y+132,fill='#e1e6eb',outline='')
-                self.create_text(x+w/2,y+118,text='OMITTED',fill='#657789',font=('Helvetica Neue',11,'bold'))
-            self.create_text(x+10,y+246,anchor='w',text='✓ Keep' if included else '↩ Restore',fill='#0d7682',font=('Helvetica Neue',11,'bold'))
-            self.create_text(x+w-10,y+246,anchor='e',text='Crop' if edit.get('crop') else '',fill='#657789')
+                self.create_rectangle(x+8,y+103,x+w-8,y+132,fill='#e2e0d7',outline='')
+                self.create_text(x+w/2,y+118,text='OMITTED',fill='#62675c',font=('Helvetica Neue',11,'bold'))
+            self.create_text(x+10,y+246,anchor='w',text='✓ Keep' if included else '↩ Restore',fill='#2e6253',font=('Helvetica Neue',11,'bold'))
+            self.create_text(x+w-10,y+246,anchor='e',text='Crop' if edit.get('crop') else '',fill='#62675c')
             if page==self.focus_page and self.focus_get()==self:
-                self.create_rectangle(x+4,y+4,x+w-4,y+260,outline='#123a56',dash=(2,2))
+                self.create_rectangle(x+4,y+4,x+w-4,y+260,outline='#263f38',dash=(2,2))
         rows=(len(self.visible)+self.columns-1)//self.columns
         self.configure(scrollregion=(0,0,width,rows*280+8))
 
@@ -100,7 +100,7 @@ class PageGrid(tk.Canvas):
         target=self.hit(event.x,event.y)
         if self.press and target is not None and target!=self.press[0]:
             x,y,w,h=self.cards[target]
-            self.create_rectangle(x-3,y-3,x+w+3,y+h+3,outline='#0d7682',width=3,tags='drop')
+            self.create_rectangle(x-3,y-3,x+w+3,y+h+3,outline='#2e6253',width=3,tags='drop')
 
     def pointer_up(self,event):
         self.delete('drop')

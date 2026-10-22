@@ -10,6 +10,7 @@ import uuid
 
 from tkinterdnd2 import COPY, DND_FILES, REFUSE_DROP
 
+from .branding import draw_cantus_mark
 from .assembly_jobs import AssemblyJob
 from .pdf_layout import map_rect
 from .music_dialogs import PageOrganizer, ExportDialog
@@ -132,7 +133,7 @@ class MusicWorkspace:
         def tab(title):
             panel = ttk.Frame(self.inspector_tabs)
             self.inspector_tabs.add(panel, text=title)
-            canvas = tk.Canvas(panel, highlightthickness=0, background='#f5f7fa', width=1)
+            canvas = tk.Canvas(panel, highlightthickness=0, background='#f7f4ed', width=1)
             scrollbar = ttk.Scrollbar(panel, command=canvas.yview)
             scrollbar.pack(side='right', fill='y')
             canvas.pack(side='left', fill='both', expand=True)
@@ -159,7 +160,7 @@ class MusicWorkspace:
         ttk.Button(editor, text='Apply song / pages', command=self.apply_and_render).pack(fill='x', pady=8)
         editor = notes_editor
         ttk.Label(editor, text='PAGE NOTES', style='Section.TLabel').pack(anchor='w')
-        self.notes_list = tk.Listbox(editor, height=4, exportselection=False, background='white', foreground='#123a56', selectbackground='#0d7682', selectforeground='white', highlightbackground='#dce3ea', highlightcolor='#0d7682')
+        self.notes_list = tk.Listbox(editor, height=4, exportselection=False, background='white', foreground='#263f38', selectbackground='#2e6253', selectforeground='white', highlightbackground='#d9d7cc', highlightcolor='#2e6253')
         self.notes_list.pack(fill='x', pady=5)
         self.notes_list.bind('<<ListboxSelect>>', self.select_note)
         note_actions = ttk.Frame(editor)
@@ -168,7 +169,7 @@ class MusicWorkspace:
         ttk.Button(note_actions, text='Delete', command=self.delete_note).pack(side='right')
         self.scope_label = ttk.Label(editor, text='', style='Muted.TLabel', wraplength=255)
         self.scope_label.pack(fill='x', pady=5)
-        self.note_text = tk.Text(editor, height=4, wrap='word', font=('Helvetica Neue', 12), undo=True, background='white', foreground='#123a56', insertbackground='#123a56', selectbackground='#0d7682', selectforeground='white', highlightbackground='#dce3ea', highlightcolor='#0d7682')
+        self.note_text = tk.Text(editor, height=4, wrap='word', font=('Helvetica Neue', 12), undo=True, background='white', foreground='#263f38', insertbackground='#263f38', selectbackground='#2e6253', selectforeground='white', highlightbackground='#d9d7cc', highlightcolor='#2e6253')
         self.note_text.pack(fill='x')
         self.print_check = ttk.Checkbutton(editor, text='Include in PDF / print', variable=self.note_print)
         self.print_check.pack(anchor='w', pady=5)
@@ -198,7 +199,7 @@ class MusicWorkspace:
         self.expand_button = ttk.Button(nav, text='Expand', command=self.toggle_expand)
         self.expand_button.pack(side='right', padx=(6, 0))
         ttk.Button(nav, text='Fit page', command=self.schedule_render).pack(side='right')
-        self.canvas = tk.Canvas(center, background='#e9eef3', highlightthickness=0)
+        self.canvas = tk.Canvas(center, background='#eae6dc', highlightthickness=0)
         self.canvas.pack(fill='both', expand=True)
         self.canvas.bind('<Configure>', lambda e: self.schedule_render())
         self.canvas.bind('<ButtonPress-1>', self.page_click)
@@ -541,7 +542,7 @@ class MusicWorkspace:
         if self.note() and self.image_box and self.note()['page'] == self.page:
             ox, oy, iw, ih = self.image_box
             x, y, w, h = self.view_note()['rect']
-            self.canvas.create_rectangle(ox + x * iw, oy + y * ih, ox + (x + w) * iw, oy + (y + h) * ih, outline='#0d7682', width=2, tags='selection')
+            self.canvas.create_rectangle(ox + x * iw, oy + y * ih, ox + (x + w) * iw, oy + (y + h) * ih, outline='#2e6253', width=2, tags='selection')
 
     def delete_note(self):
         if self.job or not self.note():
@@ -573,6 +574,17 @@ class MusicWorkspace:
         if not self.track():
             self.canvas.delete('all')
             self.image = self.image_box = None
+            width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
+            x, y = width / 2, height / 2
+            if self.kind == 'service':
+                draw_cantus_mark(self.canvas, x, y - 40, scale=.85, chapel=True)
+            else:
+                for offset in range(-48, -15, 8):
+                    self.canvas.create_line(x - 70, y + offset, x + 70, y + offset, fill='#c5c8b8')
+                self.canvas.create_oval(x - 6, y - 36, x + 6, y - 29, fill='#2e6253', outline='')
+                self.canvas.create_line(x + 5, y - 33, x + 5, y - 62, fill='#2e6253', width=2)
+            self.canvas.create_text(x, y + 16, text='Your music, your markings.' if self.kind == 'practice' else 'Bring the service together.', font=('Georgia', 21), fill='#263f38', width=max(100, width - 48), justify='center')
+            self.canvas.create_text(x, y + 82, text='Open a PDF or image to add notes.\nResume saved work with Open project.' if self.kind == 'practice' else 'Add your songs, arrange their order,\nand prepare one collection for the service.', font=('Helvetica Neue', 12), fill='#62675c', width=max(100, width - 48), justify='center')
             return
         self.launch(dict(operation='library_render', model=self.model, track=self.track_index, page=self.page,
                          width=max(100, self.canvas.winfo_width() - 20), height=max(100, self.canvas.winfo_height() - 20)))

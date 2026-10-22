@@ -67,13 +67,13 @@ class DetailsPane(ttk.Frame):
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         self.text = tk.Text(body, width=1, wrap="word", relief="flat", background="white",
-                            foreground="#123a56", padx=12, pady=12, font=("Helvetica Neue", 12))
+                            foreground="#263f38", padx=12, pady=12, font=("Helvetica Neue", 12))
         scrollbar = ttk.Scrollbar(body, command=self.text.yview)
         scrollbar.pack(side="right", fill="y")
         self.text.configure(yscrollcommand=scrollbar.set)
         self.text.pack(fill="both", expand=True)
         self.text.tag_configure("section", font=("Helvetica Neue", 12, "bold"), spacing1=12, spacing3=10)
-        self.text.tag_configure("label", foreground="#536477", font=("Helvetica Neue", 10, "bold"))
+        self.text.tag_configure("label", foreground="#62675c", font=("Helvetica Neue", 10, "bold"))
         self.text.configure(state="disabled")
         self.text.bind("<Escape>", lambda event: on_close())
 

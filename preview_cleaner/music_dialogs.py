@@ -63,7 +63,7 @@ class PageOrganizer(WorkspaceDialog):
         ttk.Label(frame,textvariable=self.status,wraplength=900).pack(side='bottom',fill='x',pady=4)
         body=ttk.Frame(frame);body.pack(fill='both',expand=True)
         shell=ttk.Frame(body,width=280,padding=(10,0,0));shell.pack(side='right',fill='y');shell.pack_propagate(False)
-        self.inspector_canvas=tk.Canvas(shell,highlightthickness=0,background='#f7f9fb')
+        self.inspector_canvas=tk.Canvas(shell,highlightthickness=0,background='#f7f4ed')
         sidebar_scroll=ttk.Scrollbar(shell,command=self.inspector_canvas.yview);sidebar_scroll.pack(side='right',fill='y')
         self.inspector_canvas.configure(yscrollcommand=sidebar_scroll.set);self.inspector_canvas.pack(fill='both',expand=True)
         inspector=ttk.Frame(self.inspector_canvas)
@@ -433,7 +433,7 @@ class ExportPreview(WorkspaceDialog):
         self.approve_button=ttk.Button(bar,text='Use this quality' if reduced else 'Done',command=self.approve,style='Primary.TButton')
         self.approve_button.pack(side='right',padx=6)
         area=ttk.Frame(frame);area.pack(fill='both',expand=True)
-        self.canvas=tk.Canvas(area,background='#e9eef3',highlightthickness=0)
+        self.canvas=tk.Canvas(area,background='#eae6dc',highlightthickness=0)
         vertical=ttk.Scrollbar(area,orient='vertical',command=self.canvas.yview);vertical.pack(side='right',fill='y')
         horizontal=ttk.Scrollbar(area,orient='horizontal',command=self.canvas.xview);horizontal.pack(side='bottom',fill='x')
         self.canvas.configure(yscrollcommand=vertical.set,xscrollcommand=horizontal.set)
@@ -505,7 +505,7 @@ class CropEditor:
     def draw(self):
         if self.rectangle:self.canvas.delete(self.rectangle)
         l,t,r,b=self.crop
-        self.rectangle=self.canvas.create_rectangle(l*self.image.width(),t*self.image.height(),r*self.image.width(),b*self.image.height(),outline='#087f8c',width=3)
+        self.rectangle=self.canvas.create_rectangle(l*self.image.width(),t*self.image.height(),r*self.image.width(),b*self.image.height(),outline='#2e6253',width=3)
 
     def apply(self):
         candidate=deepcopy(self.organizer.track)

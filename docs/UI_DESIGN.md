@@ -141,3 +141,52 @@ The three main workspaces share a native Notebook in the main window. Notes and 
 ## 0.19.0 — Cantus PDF
 
 Rename visible app identity, window titles, About title, new annotation authors and exported PDF creator metadata to Cantus PDF. Historical Stitch screen titles and existing document format identifiers stay unchanged.
+
+
+## Warm music-desk refresh
+
+Google Stitch reference: https://stitch.withgoogle.com/projects/1896237436426483012
+Design system: `assets/36f2bc9010cb47c3a399cc006fc91172` (Cantus Atelier).
+The generated screenshot was downloaded and visually inspected. Adopted warm ivory
+surfaces, forest ink, high-contrast terracotta primary actions, editorial serif
+headings and simple staff motifs. Prepare now gives an actionable welcome inside
+the original pane and explains the output pane; both disappear when their preview
+is available. Notes and Collection have task-specific empty-state guidance.
+Shared native styles and preview/organizer/inspector colors carry the palette
+through the workspaces. Fonts remain local (Georgia and Helvetica Neue).
+
+The mockup's stamping, measure-marker injection, scanned-watermark removal, binding
+gutters and fabricated runtime statistics were excluded. Existing PDF processing,
+export verification, security disclosures and persistent tab behavior are retained.
+Only the synthetic design brief was sent to Stitch, with no document content.
+
+Validation: 213 tests passed (5 dependency deprecation warnings). Native Prepare
+was visually checked at 1280×850 and the 1000×780 minimum, including a loaded
+synthetic PDF; Notes was checked at the minimum size. The empty-state spacing was
+then tightened to keep its Open button fully visible at minimum height. This is
+a source UI update; the distribution app has not been rebuilt for this refresh.
+
+
+## Liturgical identity completion
+
+Stitch project: https://stitch.withgoogle.com/projects/1896237436426483012
+Screen: `69fd111a94c84aa0ba0ae9e2d2a5cd26`. The generated screenshot was
+downloaded and visually reviewed. Adopted the restrained Latin-cross/music-note
+wordmark, chapel-arch welcome motif, and explicit liturgical subtitle. The mark
+is drawn locally with Tk Canvas by `branding.py`; the app icon is editable SVG
+with matching generated PNG/ICNS assets. The Service collection welcome uses the
+same chapel emblem. Notes and printable-output empty states retain music motifs.
+Religious decoration disappears from the document stage when a PDF is loaded
+and is never inserted into PDF exports. No portraits or remote assets are used.
+
+Stitch's invented PDF/X compliance, automatic flattening, real-time preview and
+archival-verification claims were excluded. Existing processing remains unchanged.
+Native Prepare was visually checked at normal and minimum sizes, including a
+loaded synthetic PDF.
+
+Validation: full regression suite passed (213 tests); local macOS arm64 bundle
+and ZIP rebuilt with the new UI and icon. Strict deep codesign verification
+passed for the local ad-hoc bundle. The packaged offline diagnostic reports
+`passed: true`, including 50 worker cancellations and 20 viewer lifecycle cycles.
+Developer ID notarization and clean-machine distribution acceptance remain
+separate release steps.

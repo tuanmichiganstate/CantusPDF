@@ -10,6 +10,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 import pymupdf
 from tkinterdnd2 import COPY, DND_FILES, REFUSE_DROP, TkinterDnD
 
+from .branding import draw_cantus_mark
 from .core import CleanerError, PasswordNeeded, open_pdf, printing_allowed, read_pdf, save_new
 from .jobs import CleaningJob
 from .batch import BatchWindow
@@ -62,8 +63,8 @@ class CleanerWindow:
 
     def build_interface(self):
         """Native adaptation of the Google Stitch comparison workspace."""
-        colors = {"paper": "#ffffff", "surface": "#f5f7fa", "canvas": "#e9eef3",
-                  "ink": "#123a56", "muted": "#536477", "line": "#dce3ea", "teal": "#0d7682"}
+        colors = {"paper": "#fffdf8", "surface": "#f7f4ed", "canvas": "#eae6dc",
+                  "ink": "#263f38", "muted": "#62675c", "line": "#d9d7cc", "teal": "#2e6253"}
         self.colors = colors
         style = ttk.Style(self.root)
         style.theme_use("clam")
@@ -73,23 +74,25 @@ class CleanerWindow:
         style.configure("TLabel", background=colors["surface"])
         style.configure("Paper.TLabel", background=colors["paper"])
         style.configure("Muted.TLabel", foreground=colors["muted"])
-        style.configure("Title.TLabel", font=("Helvetica Neue", 19, "bold"))
+        style.configure("Title.TLabel", font=("Georgia", 23))
         style.configure("Section.TLabel", font=("Helvetica Neue", 11, "bold"), foreground=colors["muted"])
         style.configure("TButton", padding=(12, 8), background=colors["paper"], bordercolor=colors["line"], borderwidth=1)
-        style.map("TButton", background=[("active", "#e9eef3")], foreground=[("disabled", "#7a8998")])
-        style.configure("Primary.TButton", background=colors["teal"], foreground="white", bordercolor=colors["teal"])
-        style.map("Primary.TButton", background=[("disabled", "#e1e7eb"), ("active", "#0b636d")],
-                  foreground=[("disabled", "#7a8998"), ("!disabled", "white")])
+        style.map("TButton", background=[("active", "#eae6dc")], foreground=[("disabled", "#777a70")])
+        style.configure("Primary.TButton", background="#994128", foreground="white", bordercolor="#994128")
+        style.map("Primary.TButton", background=[("disabled", "#e4e3da"), ("active", "#7d2c15")],
+                  foreground=[("disabled", "#777a70"), ("!disabled", "white")])
         style.configure("Quiet.TButton", padding=(8, 5))
-        style.configure("ActiveNav.TButton", background="#dceff0", foreground=colors["teal"], bordercolor="#a5cdd1", padding=(12, 8))
-        style.map("ActiveNav.TButton", background=[("active", "#cce5e8")])
+        style.configure("ActiveNav.TButton", background="#e3ebe2", foreground=colors["teal"], bordercolor="#b7cbb9", padding=(12, 8))
+        style.map("ActiveNav.TButton", background=[("active", "#d5e2d4")])
         style.configure("TNotebook", background=colors["surface"], borderwidth=0)
-        style.configure("TNotebook.Tab", padding=(16, 9))
-        style.map("TNotebook.Tab", background=[("selected", "white")], foreground=[("selected", colors["teal"])])
+        style.configure("TNotebook.Tab", padding=(22, 12), background=colors["surface"])
+        style.map("TNotebook.Tab", background=[("selected", colors["paper"])], foreground=[("selected", colors["teal"])])
         style.configure("TCheckbutton", background=colors["surface"], padding=(0, 4))
         style.map("TCheckbutton", background=[("active", colors["surface"])])
         style.configure("TEntry", padding=8, fieldbackground="white", bordercolor=colors["line"])
         style.configure("Horizontal.TProgressbar", background=colors["teal"], troughcolor=colors["line"], borderwidth=0)
+        style.configure("Treeview", background=colors["paper"], fieldbackground=colors["paper"], rowheight=30, bordercolor=colors["line"])
+        style.map("Treeview", background=[("selected", colors["teal"])], foreground=[("selected", "white")])
         self.root.configure(background=colors["surface"])
         menu = tk.Menu(self.root)
         tools = tk.Menu(menu, tearoff=False)
@@ -117,7 +120,15 @@ class CleanerWindow:
         self.workspaces.bind("<<NotebookTabChanged>>", self.workspace_changed)
         header = ttk.Frame(prepare, padding=(22, 16))
         header.pack(fill="x")
-        ttk.Label(header, text="Cantus PDF", style="Title.TLabel").pack(side="left")
+        identity = ttk.Frame(header)
+        identity.pack(side="left")
+        wordmark = ttk.Frame(identity)
+        wordmark.pack(anchor="w")
+        mark = tk.Canvas(wordmark, width=34, height=38, background=colors["surface"], highlightthickness=0)
+        mark.pack(side="left", padx=(0, 8))
+        draw_cantus_mark(mark, 18, 19, scale=.65)
+        ttk.Label(wordmark, text="Cantus PDF", style="Title.TLabel").pack(side="left")
+        ttk.Label(identity, text="Prepare music for the liturgy.", style="Muted.TLabel").pack(anchor="w", pady=(3, 0))
         self.save_button = ttk.Button(header, text="Save copy…", command=self.save, state="disabled", style="Primary.TButton")
         self.save_button.pack(side="right")
         ttk.Button(header, text="Open PDF…", command=self.choose_file).pack(side="right", padx=10)
@@ -160,10 +171,10 @@ class CleanerWindow:
         ttk.Label(sidebar, text="Overlay text", style="Muted.TLabel").pack(anchor="w", pady=(10, 4))
         self.target_entry = ttk.Entry(sidebar, textvariable=self.target)
         self.target_entry.pack(fill="x")
-        security = tk.Frame(sidebar, background="#edf5f5", highlightbackground="#cfdddd", highlightthickness=1, padx=12, pady=12)
+        security = tk.Frame(sidebar, background="#eaf0e5", highlightbackground="#cdd8c7", highlightthickness=1, padx=12, pady=12)
         security.pack(fill="x", pady=(18, 0))
-        tk.Label(security, text="Printing enabled", background="#edf5f5", foreground="#0b636d", font=("Helvetica Neue", 12, "bold"), anchor="w").pack(fill="x")
-        tk.Label(security, textvariable=self.security_summary, background="#edf5f5", foreground=colors["ink"], wraplength=222, justify="left", anchor="w", font=("Helvetica Neue", 12)).pack(fill="x", pady=(10, 0))
+        tk.Label(security, text="Printing enabled", background="#eaf0e5", foreground="#234d41", font=("Helvetica Neue", 12, "bold"), anchor="w").pack(fill="x")
+        tk.Label(security, textvariable=self.security_summary, background="#eaf0e5", foreground=colors["ink"], wraplength=222, justify="left", anchor="w", font=("Helvetica Neue", 12)).pack(fill="x", pady=(10, 0))
         ttk.Button(security, text="Security details…", command=lambda: self.show_pdf_details("SECURITY & EXPORT")).pack(anchor="w", pady=(8, 0))
         self.bind_sidebar_scroll(sidebar)
         self.sidebar_canvas.bind("<MouseWheel>", self.scroll_sidebar)
@@ -171,7 +182,8 @@ class CleanerWindow:
         workspace = ttk.Frame(body, padding=(20, 18))
         self.workspace = workspace
         workspace.pack(side="left", fill="both", expand=True)
-        ttk.Label(workspace, text="Compare", font=("Helvetica Neue", 17, "bold")).pack(anchor="w", pady=(0, 14))
+        ttk.Label(workspace, text="Your music, ready to share", font=("Georgia", 20)).pack(anchor="w")
+        ttk.Label(workspace, text="01  Open a PDF    /    02  Preview changes    /    03  Save a copy", style="Muted.TLabel").pack(anchor="w", pady=(6, 16))
         self.notice = tk.Label(workspace, textvariable=self.notice_text, anchor="w", justify="left", padx=12, pady=10,
                                background="#fff4d6", foreground="#784c00", wraplength=650, font=("Helvetica Neue", 12))
         self.notice.pack(fill="x", pady=(0, 12))
@@ -182,6 +194,7 @@ class CleanerWindow:
         viewer.columnconfigure((0, 1), weight=1, uniform="preview")
         viewer.rowconfigure(0, weight=1)
         self.panels = []
+        self.empty_states = []
         self.expand_buttons = []
         for col, title in enumerate(("Original", "Printable copy")):
             frame = ttk.Frame(viewer, style="Paper.TFrame")
@@ -202,6 +215,25 @@ class CleanerWindow:
             label = tk.Label(stage, background=colors["canvas"], foreground=colors["muted"], font=("Helvetica Neue", 15), justify="center")
             label.place(relx=0, rely=0, relwidth=1, relheight=1)
             self.panels.append(label)
+            empty = tk.Frame(stage, background=colors["canvas"])
+            motif = tk.Canvas(empty, width=160, height=64, background=colors["canvas"], highlightthickness=0)
+            motif.pack(pady=(0, 8))
+            if col == 0:
+                draw_cantus_mark(motif, 80, 34, scale=.85, chapel=True)
+            else:
+                for y in range(24, 57, 8):
+                    motif.create_line(12, y, 148, y, fill="#c5c8b8")
+                for x, y in ((47, 48), (79, 40), (111, 32)):
+                    motif.create_oval(x - 6, y - 3, x + 6, y + 4, fill=colors["teal"], outline="")
+                    motif.create_line(x + 5, y, x + 5, y - 25, fill=colors["teal"], width=2)
+            tk.Label(empty, text="Make room\nfor the music." if col == 0 else "A fresh copy,\na careful comparison.", background=colors["canvas"], foreground=colors["ink"], font=("Georgia", 20), justify="center").pack()
+            tk.Label(empty, text="Drop your PDF here to begin.\nYour original stays untouched." if col == 0 else "Preview your changes, then\nreview every page before saving.", background=colors["canvas"], foreground=colors["muted"], font=("Helvetica Neue", 12), justify="center").pack(pady=(10, 12))
+            if col == 0:
+                ttk.Button(empty, text="Open a PDF…", style="Primary.TButton", command=self.choose_file).pack()
+                for target in (empty, *empty.winfo_children()):
+                    target.drop_target_register(DND_FILES)
+                    target.dnd_bind("<<Drop>>", self.drop_pdf)
+            self.empty_states.append(empty)
             label.bind("<Double-Button-1>", lambda event, source=col: self.expand_page(source))
             if col == 0:
                 for widget in (frame, stage, label):
@@ -578,8 +610,10 @@ class CleanerWindow:
             button.configure(state="normal" if document is not None else "disabled")
         for index, (label, document) in enumerate(zip(self.panels, (self.original, self.output))):
             if document is None:
-                label.configure(image="", text="Drop PDFs\n\nor open files" if index == 0 else "Preview appears here")
+                label.configure(image="", text="")
+                self.empty_states[index].place(relx=.5, rely=.5, anchor="center")
                 continue
+            self.empty_states[index].place_forget()
             page = document[self.page]
             width = max(50, label.winfo_width() - 32)
             height = max(50, label.winfo_height() - 32)
@@ -600,7 +634,7 @@ class CleanerWindow:
         text, warning = result_notice(self.result.report if self.result else None, self.page)
         self.notice_text.set(text)
         if text:
-            self.notice.configure(background="#fff4d6" if warning else "#edf5f5", foreground="#784c00" if warning else "#0b636d")
+            self.notice.configure(background="#fff4d6" if warning else "#eaf0e5", foreground="#784c00" if warning else "#234d41")
             self.notice.pack(before=self.preview_workspace, fill="x", pady=(0, 12))
         else:
             self.notice.pack_forget()

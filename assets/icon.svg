@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#164f72"/><stop offset="1" stop-color="#09263e"/></linearGradient></defs>
-  <rect x="56" y="56" width="912" height="912" rx="206" fill="#123a56"/>
-  <path d="M282 218H580L742 380V776Q742 814 704 814H282Q244 814 244 776V256Q244 218 282 218Z" fill="#f1f9fc"/>
-  <path d="M580 218V346Q580 380 614 380H742" fill="#8cbace"/>
-  <path d="M334 460H644M334 546H590M334 632H518" fill="none" stroke="#164f72" stroke-width="35" stroke-linecap="round"/>
-  <path d="M737 484L771 581L868 615L771 649L737 746L703 649L606 615L703 581Z" fill="#3ee1c7" stroke="#09263e" stroke-width="14" stroke-linejoin="round"/>
-  <path d="M819 348L837 394L883 412L837 430L819 476L801 430L755 412L801 394Z" fill="#3ee1c7"/>
+  <title>Cantus PDF — cross and music</title>
+  <rect x="56" y="56" width="912" height="912" rx="206" fill="#263f38"/>
+  <path d="M282 190H604L780 366V796Q780 834 742 834H282Q244 834 244 796V228Q244 190 282 190Z" fill="#fffdf8"/>
+  <path d="M604 190V328Q604 366 642 366H780" fill="#d9d7cc"/>
+  <path d="M348 722V460Q348 378 512 298Q676 378 676 460V722" fill="none" stroke="#bfc8b8" stroke-width="14"/>
+  <path d="M308 526H716M308 568H716M308 610H716M308 652H716M308 694H716" fill="none" stroke="#d9d7cc" stroke-width="8"/>
+  <path d="M536 386V670M458 468H614" fill="none" stroke="#263f38" stroke-width="30"/>
+  <ellipse cx="500" cy="676" rx="52" ry="34" fill="#994128" transform="rotate(-16 500 676)"/>
 </svg>

@@ -30,7 +30,7 @@ class PageViewer:
         toolbar.pack(fill="x")
         style = ttk.Style(self.window)
         style.configure("Source.TRadiobutton", padding=(12, 8), font=("Helvetica Neue", 12, "bold"))
-        style.map("Source.TRadiobutton", background=[("selected", "#123a56")], foreground=[("disabled", "#7a8998"), ("selected", "white")])
+        style.map("Source.TRadiobutton", background=[("selected", "#263f38")], foreground=[("disabled", "#7a8998"), ("selected", "white")])
         ttk.Radiobutton(toolbar, style="Source.TRadiobutton", text="Original", variable=self.source, value=0, command=self.render).pack(side="left")
         self.output_button = ttk.Radiobutton(toolbar, style="Source.TRadiobutton", text="Output", variable=self.source, value=1, command=self.render)
         self.output_button.pack(side="left", padx=(8, 24))
