@@ -159,7 +159,7 @@ Worker startup uses a headless subprocess (native `posix_spawn` on macOS), avoid
 
 Drop several PDFs onto Original PDF, select several files with Open PDF, or choose Batch… to open the batch list. Add PDFs accepts more files; dropping onto the list also works. Duplicate paths are ignored.
 
-Set the shared overlay text/removal option, then choose Export all… and an output folder. Files run sequentially in background workers; each successful result is saved as `<name>-printable.pdf`, with numbered suffixes for existing names. Original files and existing output files are never overwritten. Printing is always enabled; restricted copies lose encryption and opening passwords as explained in the batch window.
+Set the shared overlay text/removal option, then choose Export all… and an output folder. Files run sequentially in background workers; each successful result is saved as `<name>-printable.pdf`, with numbered suffixes for existing names. Original files and existing output files are never overwritten. Printing is always enabled; restricted copies lose encryption and opening passwords as explained in the batch window. The output-folder chooser starts in the first queued PDF's folder, and you can choose any other folder.
 
 Each file has its own status and saved path. Select a row for complete details. Failed files do not stop later files. Encrypted inputs prompt separately; Cancel in the password prompt skips that file. Batch Cancel stops the active worker and remaining queue; copies already saved are kept. Clear list starts a fresh batch. Unsupported overlays stay unchanged and are flagged for review. Batch export saves verified copies directly; use single-file mode when you want to compare previews before saving.
 

@@ -193,7 +193,8 @@ class BatchWindow(QDialog):
         if self.running or not self.rows:return
         if not self.shell.acquire(self,'batch'):self.status.setText('Another PDF task is running.');return
         if self.remove.isChecked() and not self.target.text().strip():warn(self,'Enter overlay text or disable overlay removal.');return
-        path=destination if isinstance(destination,(str,Path)) else QFileDialog.getExistingDirectory(self,'Save printable copies')
+        initial_folder=str(Path(self.rows[0]['path']).parent)
+        path=destination if isinstance(destination,(str,Path)) else QFileDialog.getExistingDirectory(self,'Save printable copies',initial_folder)
         if not path:return
         self.destination=Path(path);self.running=True;self.index=0
         self.snapshot=(self.target.text(),self.remove.isChecked())
