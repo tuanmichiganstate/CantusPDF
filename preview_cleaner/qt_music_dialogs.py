@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QDialog, QWidget, QVBoxLayout, QHBoxLayout, QForm
     QListWidget, QListWidgetItem, QAbstractItemView, QCheckBox, QSpinBox, QDoubleSpinBox,
     QComboBox, QTabWidget, QDialogButtonBox)
 from .qt_common import JobRunner, image_from_result, warn
-from .qt_preview import label, button, ScoreView
+from .qt_prepare import label, button, ScoreView
 from .pdf_layout import export_options, layout_plan
 from .music_library import validate_model
 

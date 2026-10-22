@@ -6,8 +6,8 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QDialog, QVBoxLayout,
-    QHBoxLayout, QPlainTextEdit, QFileDialog, QMessageBox, QComboBox, QSpinBox, QLabel, QPushButton)
-from .qt_preview import PrepareWindow, PreviewPane, STYLE, label, button
+    QHBoxLayout, QPlainTextEdit, QFileDialog, QMessageBox, QComboBox, QSpinBox, QLabel)
+from .qt_prepare import PrepareWindow, PreviewPane, STYLE, label, button
 from .qt_music import MusicWorkspace
 from .qt_tools import PageTools, BatchWindow
 from .qt_common import warn, choose_save
@@ -31,10 +31,6 @@ class FullPrepare(PrepareWindow):
         super().__init__()
         self.setAcceptDrops(True)
         for action in self.actions():self.removeAction(action)
-        for control in self.findChildren(QPushButton):
-            if control.objectName()=='active':control.hide()
-        for text in self.findChildren(QLabel):
-            if text.text() in ('INTERFACE PREVIEW','Qt preview · Prepare workspace'):text.hide()
         side=self.document_info.parentWidget().layout()
         side.insertWidget(side.indexOf(self.document_info)+1,button('PDF / security…',lambda:self.shell.show_metadata(self.path), 'quiet'))
         side.insertWidget(side.indexOf(self.document_info)+2,button('Organize / add notes…',lambda:self.handoff(),'quiet'))
@@ -257,6 +253,13 @@ def main():
     app=QApplication(sys.argv);app.setApplicationName('Cantus PDF');app.setStyle('Fusion');app.setStyleSheet(APP_STYLE)
     base=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent.parent));app.setWindowIcon(QIcon(str(base/'assets/icon.png')))
     window=CantusWindow();window.show()
+    if '--startup-report' in sys.argv:
+        report=Path(sys.argv[sys.argv.index('--startup-report')+1])
+        def ready():
+            window.repaint()
+            report.write_text('ready')
+            if '--exit-after-startup' in sys.argv:QTimer.singleShot(200,window.close)
+        QTimer.singleShot(0,ready)
     result=app.exec()
     from shiboken6 import delete,isValid
     if isValid(window):delete(window)

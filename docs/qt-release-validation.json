@@ -1,5 +1,16 @@
 {
   "passed": true,
+  "generated_at_utc": "2026-10-22T10:13:24.637127+00:00",
+  "platform": "Darwin 26.6.2 arm64",
+  "source_revision": "c1d7c1707cfd20fa93c526692e485042714af8a6",
+  "source_worktree_dirty": true,
+  "release_tests": {
+    "tests": 175,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 175
+  },
   "checks": [
     "Prepare: verified overlay removal, printable export and source preservation",
     "Prepare: worker cancellation",
@@ -11,19 +22,9 @@
     "Batch: sequential packaged workers and no-overwrite filenames",
     "Portable projects: reopen after original source files are removed"
   ],
-  "date": "2026-10-22",
-  "platform": "macOS 26.6.2 arm64",
-  "release_tests": {
-    "backend_passed": 159,
-    "qt_passed": 13,
-    "total_passed": 172,
-    "skipped": 0
-  },
-  "existing_regression_tests_before_migration": 213,
-  "source_open_close_cycles_passed": 10,
-  "signature": "ad-hoc; codesign --verify --deep --strict passed",
-  "archive_sha256": "02eeed06f03b6644e9ebc75c4b695313e9b1920a2b263a085e4d09b76bc30bad",
-  "separate_mac_tested": false,
+  "archive": "dist/CantusPDF-macOS-arm64.zip",
+  "archive_sha256": "8986d305f79496c3a900238d585de0986fee1fa0d03836bc576161c9577e09cd",
+  "signature_verified": true,
   "notarized": false,
-  "cleanup": "Retired GUI modules, tests, benchmark and obsolete validation removed; all relative imports resolve."
+  "separate_mac_tested": false
 }

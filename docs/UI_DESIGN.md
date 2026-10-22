@@ -3,7 +3,7 @@
 The desktop app implements the Google Stitch direction in PySide6 Essentials:
 warm paper surfaces, dark green text, restrained terracotta actions and serif
 headings. The Latin-cross/music-note identity is drawn locally with QPainter in
-`qt_preview.py`; the application icon is editable SVG. Decorative artwork stays
+`qt_prepare.py`; the application icon is editable SVG. Decorative artwork stays
 out of exported PDFs.
 
 ## Workspaces
@@ -23,7 +23,7 @@ image quality. Batch, Join and Split open focused secondary windows.
 
 ## Interaction and implementation
 
-`qt_app.py` owns navigation, menus, metadata and lifecycle. `qt_preview.py`
+`qt_app.py` owns navigation, menus, metadata and lifecycle. `qt_prepare.py`
 provides Prepare and shared visual components; `qt_music.py` and
 `qt_music_dialogs.py` implement music editing; `qt_tools.py` implements Batch,
 Join and Split. All processing uses the existing verified PDF backend.

@@ -9,7 +9,7 @@ from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPlainTextEdit, QCheckBox, QDoubleSpinBox, QComboBox, QListWidget, QListWidgetItem,
     QAbstractItemView, QTabWidget, QStackedWidget, QFormLayout, QScrollArea, QFileDialog, QMessageBox)
-from .qt_preview import label, button, ScoreView, Emblem
+from .qt_prepare import label, button, ScoreView, Emblem
 from .qt_common import JobRunner, image_from_result, warn, choose_save
 from .music_library import new_set, validate_model, validate_note, selected_pages, page_text
 from .pdf_layout import map_rect, export_options

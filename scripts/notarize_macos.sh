@@ -25,5 +25,7 @@ PY
 xcrun stapler staple "dist/Cantus PDF.app"
 xcrun stapler validate "dist/Cantus PDF.app"
 spctl --assess --type execute --verbose=2 "dist/Cantus PDF.app"
+"dist/Cantus PDF.app/Contents/MacOS/CantusPDF" --self-test build/release-check.json
 ditto -c -k --sequesterRsrc --keepParent "dist/Cantus PDF.app" dist/CantusPDF-macOS-arm64.zip
+.venv-build/bin/python scripts/record_release.py --notarized
 echo "Signed, notarized, stapled archive: dist/CantusPDF-macOS-arm64.zip"

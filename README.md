@@ -110,10 +110,10 @@ Limits: 100 MB file, 300 pages, 4 MB combined top-level page content. Desktop cl
 
 ```bash
 python -m pip install -r requirements-dev.txt
-bash scripts/build_macos.sh
+python -m pytest -q
 ```
 
-The current suite passes 172 tests covering the PDF backend and Qt interface, including 50 rapid worker cancellations after UI initialization. Run `python -m pytest -q` for all tests. GUI tests require a graphical desktop. The packaged offline diagnostic checks complete export workflows.
+The current suite covers the PDF backend and Qt interface, including 50 rapid worker cancellations after UI initialization. Run `python -m pytest -q` for all tests. GUI tests require a graphical desktop. The packaged offline diagnostic checks complete export workflows.
 
 `tests/fixtures` contains only synthetic PDFs from ReportLab, fpdf2, and PyMuPDF, plus a malformed file. Supported fixtures are checked for unchanged graphics and exact rendered pixels outside the removed label. Unsupported fixtures must remain byte-identical. To regenerate the corpus, install `requirements-fixtures.txt` and run `python scripts/generate_fixtures.py`; fixture-generator dependencies are not bundled into the app.
 
@@ -145,134 +145,72 @@ The local app includes a custom icon sourced from `assets/icon.svg`. See [the ma
 - Qt for Python: https://doc.qt.io/qtforpython-6/
 - PyInstaller platform/build model: https://pyinstaller.org/en/stable/operating-mode.html
 
-## Interface
+## Desktop workspaces
 
-The Google Stitch-inspired comparison workspace keeps export options and printing/security status in a sidebar. PDF details shows source metadata in a read-only window; verification details expand below the previews. Previews refit on resize, and Command-O / Command-S open and save. See [UI design](docs/UI_DESIGN.md).
+**Prepare PDF** compares the original with a verified printable copy. Open one
+PDF, preview changes, inspect the pages, then save a new copy. **Expand** opens
+a maximized viewer with page navigation and zoom. **PDF / security…** opens a
+read-only details dialog. Export the verification report through the File menu.
 
-Double-click either preview or choose **Expand** for a full-screen page viewer. Use Fit page, Fit width, +/− to zoom, drag or scroll to pan, and ←/→ to change pages. Switch Original/Output without losing the current view; Esc returns to the comparison workspace. Display bitmaps are capped at 12 megapixels to bound memory use.
+**PDF notes** opens one PDF or PNG/JPEG image. Add, select, drag, edit and remove
+notes in the Notes inspector. Notes can be printable or private to the project.
+**Service collection** combines songs with titles, liturgical parts and page
+choices. Reorder songs with drag-and-drop or the arrow buttons. Tabs retain their
+state while you work in other workspaces.
 
-Version 0.7 adds persistent page warnings, direct page-number entry in both views, clearer printable-copy export wording, grouped PDF details with readable timestamps, and an explicit full-screen Original/Output heading.
+**Save project** writes a portable `.pcset` containing immutable source snapshots,
+editable notes, ordering and layout. **Save as…** creates another project. Projects
+reopen even after the original input files move. Unsaved-change prompts and undo
+protect editing work. Existing projects are checked for external changes before
+replacement. **Export PDF…** writes a separate PDF; originals remain unchanged.
 
-Worker startup uses a headless subprocess (native `posix_spawn` on macOS), avoiding the forked Cocoa state that caused intermittent startup/cancellation crashes. Passwords travel through the child’s standard-input pipe, never command arguments or configuration files. Progress and results stay in a private temporary directory and are removed after the worker exits.
+**Organize / crop pages…** provides thumbnail groups, page ordering, Keep/Omit,
+rotation, automatic crop, exact margins and drawn crop. These are reversible
+project edits. **Export layout…** controls cover, contents, odd-page starts,
+numbering, note flattening and image quality. **Preview export** displays the
+actual output; reduced image quality requires explicit preview approval.
 
-## Batch PDF export
+## Batch, Join and Split
 
-Drop several PDFs onto Original PDF, select several files with Open PDF, or choose Batch… to open the batch list. Add PDFs accepts more files; dropping onto the list also works. Duplicate paths are ignored.
+Open multiple PDFs or choose **Tools → Batch printable copies…**. Shared overlay
+options apply to the queue. **Export all…** starts the output-folder chooser in
+the first queued PDF's folder; choose any other folder if preferred. Files run
+sequentially. Each successful copy uses `<name>-printable.pdf`, with numbered
+suffixes to avoid collisions. A failed file does not stop later files. Passwords
+are prompted separately; cancelling a password prompt skips that file. Cancelling
+the batch keeps completed copies. Use single-file Prepare to compare pages before
+saving. Batch exports verified copies directly.
 
-Set the shared overlay text/removal option, then choose Export all… and an output folder. Files run sequentially in background workers; each successful result is saved as `<name>-printable.pdf`, with numbered suffixes for existing names. Original files and existing output files are never overwritten. Printing is always enabled; restricted copies lose encryption and opening passwords as explained in the batch window. The output-folder chooser starts in the first queued PDF's folder, and you can choose any other folder.
+**Tools → Join PDFs… / Split PDF…** operate independently of cleaning. Join combines
+whole PDFs in the chosen order. Split supports every page, every N pages, or
+explicit ranges such as `1–3; 4–8; 10`. The split plan lists output names and omitted
+page counts. Export never overwrites existing files; completed outputs survive
+cancellation. Organize/crop hands a source to PDF notes.
 
-Each file has its own status and saved path. Select a row for complete details. Failed files do not stop later files. Encrypted inputs prompt separately; Cancel in the password prompt skips that file. Batch Cancel stops the active worker and remaining queue; copies already saved are kept. Clear list starts a fresh batch. Unsupported overlays stay unchanged and are flagged for review. Batch export saves verified copies directly; use single-file mode when you want to compare previews before saving.
+Music imports and Join/Split conservatively reject encrypted, signed and unsupported
+document structures. They never clean overlays or unlock PDFs automatically. Use
+Prepare first when needed. Page content remains vector except deliberately resized
+images or rendered annotation appearances. Processing stays local.
 
-## Compact interface (0.9.0)
+## Development and releases
 
-Preview changes is the primary action before processing; Save copy becomes primary once output is ready. Printing/security summaries remain visible, while Help and Security details contain the full behavior and limitations. Batch uses short status labels, a drop zone and Export N PDFs.
+`run_app.py` is the sole desktop bundle entry point. `qt_app.py` owns the application;
+`qt_prepare.py` supplies the Prepare workspace and shared visual components. There
+is one macOS app target, `CantusPDF.spec`.
 
-### PDF and security details (0.10.0)
+`build/`, `dist/`, `.venv-build/` and `tmp/` are local generated folders excluded
+from Git. `assets/icon.svg` is the editable icon source; the PNG and ICNS are
+regenerated by `scripts/build_icon.py`. Synthetic PDF fixtures live in
+`tests/fixtures/`; generator-only dependencies are separate from runtime dependencies.
 
-Use **PDF details…** or **Security details…** to open the read-only pane beside the comparison. **Document** and **Security** jump to the corresponding section; **Close** restores preview space. In Batch, use **PDF / security…**, then select a row to inspect that PDF and its export result. Selecting a locked PDF does not prompt for its password; complete details appear after unlocking during processing. The pane never displays passwords.
+The release build runs all tests, verifies signing, runs the packaged offline
+diagnostic, creates the ZIP and refreshes
+[release evidence](docs/qt-release-validation.json) with the exact archive hash,
+test counts and source revision/dirty state. The notarization workflow refreshes
+the evidence again after stapling and archiving. A local ad-hoc build is not
+Developer ID signed or notarized, and local checks do not establish acceptance on
+a separate Mac.
 
-## Join and Split (0.11.0)
-
-These independent tools are available from **Tools → Join PDFs… / Split PDF…**. They do not remove overlays, change printing permissions, or inherit Clean/Batch options.
-
-- **Join:** drop or add two or more PDFs, drag rows or use Up/Down, then **Join & Save…**. Entire files are combined in list order. Select a row for its first-page thumbnail and metadata.
-- **Split:** open one PDF and choose **Every page**, **Every N pages**, or **Custom ranges** such as `1–3; 4–8; 10`. The output table previews filenames and ranges. Overlapping, reversed, empty or out-of-bounds ranges are rejected. Omitted page counts are visible before saving.
-- Reading, thumbnails, export and page verification run in a background worker. Only one PDF task runs at a time across Clean, Batch, Join and Split. Cancel keeps completed split files and removes unfinished staging files.
-- Output files never replace originals or existing files; collisions get numbered suffixes. **Show in Finder** reveals the last completed output.
-- Sources are limited to 100 MB / 300 pages; Join also applies those combined limits. Encrypted PDFs (including owner-password-only encryption), signature fields, forms, attachments, layers, tagged content, portfolios and named actions are blocked rather than silently discarded.
-- Page text/vector content, boxes, rotation, supported annotations and links are copied. Every output page is checked against source text/geometry and rendered appearance before publication. Internal links outside a split part are omitted. Bookmarks and page labels are remapped. Split keeps source metadata; Join uses the first source's metadata and the chosen output title.
-
-Native menu navigation, file selection and both workspace layouts were checked on this Mac. Automated coverage includes dropped-file routing and reordering; the actual Finder drag gesture for the new tools still needs manual acceptance. The packaged self-test includes Join and Split. No new CLI switches are introduced.
-
-## Music workspaces (0.12.0)
-
-Enter any workspace directly from the navigation bar or **Workspace** menu; no mandatory sequence is imposed. Clean/Batch and the independent Join/Split tools remain available.
-
-- **Prepare PDF:** clean and save permanent printable practice copies. Current PDF → Notes / Collection uses the saved copy after processing. Join/Split also offers **Use saved PDF…**.
-- **PDF notes:** open a previously saved printable PDF, add a note then click its page. Edit/delete notes, drag their position, or adjust text size and box dimensions. Notes appear on the page and print by default. Transpose text is a reminder; the app does not transpose the score.
-- **Service collection:** add printable PDFs at any time, reorder songs, choose retained pages, and assign a liturgical part. Export combines the selected pages with section/song bookmarks. Imported song notes are copied; service-specific edits never alter the practice PDF.
-
-**Save project** writes a portable `.pcset` containing PDF snapshots, ordering, page choices and editable notes. **Open project** resumes it even after the source files move. Save As creates a separate project; existing unrelated files are not overwritten. Undo and unsaved-change prompts protect editing work.
-
-**Export PDF** creates a separate PDF with editable FreeText annotations. Reopening that PDF in PDF notes recognizes this app's annotations for editing/removal; unrelated annotations are preserved. Uncheck **Include in PDF / print** for project-only notes: these are retained in `.pcset` but omitted from the exported PDF. Keep the project to retain private notes and collection structure.
-
-These workspaces reuse Join/Split's conservative input restrictions and 100 MB / 300-page limits. They do not clean overlays or unlock PDFs automatically. Reads, preview rendering, saving and export run in background workers.
-
-## Page organization and print layout (0.13.0)
-
-In **PDF notes** or **Service collection**, select a song and choose **Organize / crop pages…**. The shared thumbnail organizer supports multiple selection, Keep/Omit, row dragging, Up/Down and clockwise rotation. Crop trims percentages from the original displayed edges; select several pages or Select all to apply together. Reset selected restores both crop and rotation. Apply records one undoable project edit; Cancel discards the dialog changes. At least one page must remain. For long PDFs, the Thumbnails buttons load groups of 12.
-
-Prepare's Workspace menu and Join/Split's **Organize / crop…** button open a separate copy in PDF notes. Export the organized copy when needed; these actions never silently change the Clean or Split document. Crop hides content outside the viewing box; it is not permanent redaction. The `.pcset` retains the original snapshot so the crop can be reset.
-
-**Open file / Add files** and drops now accept PNG/JPEG as well as PDF. Each image becomes a PDF copy with the original image resolution; originals are unchanged. Images are limited to 40 megapixels and 100 MB. In a collection, multiple images are separate entries that can be reordered and joined.
-
-**Export layout…** provides:
-- A Unicode title cover and linked contents page(s), with physical PDF page destinations.
-- Odd physical page starts for each song, inserting blank pages where needed for duplex printing.
-- Page numbers with a configurable starting number, starting physical page, top/bottom center/right placement and edge inset. Numbering is rejected if its box covers visible content; change the inset/position or disable it.
-- **Print copy: flatten all annotations**, which embeds their appearance in the export. Comment metadata is not retained in that print copy; keep the project/editable PDF for later changes. Private notes remain absent. This does not lock the PDF against other editing software.
-- Lossless size optimization (default on): compression and duplicate-object cleanup, with no image downsampling. If optimization would grow the output, the smaller serialization is kept. Some PDFs cannot shrink further.
-
-**Preview export** builds and displays the actual final layout before saving. Export options are saved in the project. Covers, contents and inserted blanks count toward the 300-page output limit. New projects use format version 2; existing version-1 projects open and upgrade, but older app versions cannot open version-2 projects.
-
-## Workspace readability (0.14.0)
-
-A fresh [Google Stitch review](https://stitch.withgoogle.com/projects/5733852018629027011) informed a more compact native interface. Active workspace navigation and New/Saved/Unsaved status identify context. The right inspector separates **Song** and **Notes**; selecting/placing a note switches to Notes. **Note box size** expands only when needed, and keyboard focus scrolls controls into view. Save As and Show in Finder are under **More…** beside Save project.
-
-Export layout groups settings into **Document**, **Page numbers**, and **Print options**, with live song/page/blank counts and a prominent **Preview PDF** action. Numbering inputs disable when numbering is off. Flattening consequences and private-note behavior remain visible in the relevant group. The page organizer distinguishes **Keep** and **Omit**, dims omitted entries, and supports Space to toggle, R to rotate, and Delete/Backspace to omit selected pages.
-
-
-### Crop and smaller sharing copies (0.15.0)
-
-In **Song → Organize pages**, select pages and choose **Draw crop…** to drag a
-rectangle on the uncropped original. The rectangle applies to the selected pages;
-Cancel discards it. **Detect white margins** proposes a separate crop for each
-selected page, preserving a 12 pt buffer around visible marks. Review thumbnails
-before **Apply pages**. Blank pages remain uncropped; faint marks and noisy scans
-can prevent margin detection. Reset restores the original crop and rotation.
-
-In **Export layout → Print options**, Original quality remains the default.
-Optional 300 dpi / 150 dpi presets resample high-resolution color/grayscale images
-and use JPEG quality 92 / 85; monochrome scans are preserved. Text and vector
-art are not rasterized. This can soften fine staff lines and may not make every
-PDF smaller. **Preview PDF** shows both sizes, an Original quality comparison,
-and scrollable Detail / Fine detail views. **Approve quality** is required before
-exporting a reduced-quality copy; any project/settings change requires review again.
-The project and source assets keep their original quality. Independent Clean,
-Join and Split exports retain their existing behavior.
-
-
-### Clearer page editing and quality review (0.16.0)
-
-Organize pages shows how many pages are selected; editing actions enable only
-after selection. **Exact margins (%)** expands numeric crop controls when needed.
-**Reset crop / rotation** makes the reset scope explicit.
-Export preview labels the current comparison/output view, reports size savings
-or growth, and offers **Use this quality** for reduced copies or **Done** for
-original quality.
-
-
-### Visual page organizer (0.17.0)
-
-Organize pages now uses a responsive thumbnail grid, with 12 thumbnails per group.
-Selected pages have teal outlines. Click a card to select; Shift-click or Shift+arrow
-keys selects a range, Command/Ctrl-click toggles individual selection, and
-Command/Ctrl+A selects all pages. Drag a card to reorder, or use Move earlier/later.
-Space toggles Keep/Omit, R rotates, and Delete omits. Omitted cards show Restore.
-Crop outlines show the retained area over the uncropped page, with project rotation
-applied. The right inspector edits the selection; exact margins remain collapsible.
-Apply counts changed pages, and Revert draft restores the state at dialog opening.
-
-### One-window workspaces (0.18.0)
-
-Prepare PDF, PDF notes, and Service collection are now persistent tabs in one main window. Switch freely without reopening documents or losing edits; each tab keeps its own project and worker. Open/Save shortcuts follow the selected tab. Crop, expanded previews, batch export and standalone Join/Split still use focused secondary windows.
-
-### Cantus PDF naming (0.19.0)
-
-The app is now **Cantus PDF** (formerly Preview Cleaner). Existing `.pcset` projects and managed PDF annotations remain compatible. The internal Python module, project format, annotation identifiers, and bundle identifier are retained for continuity. The GitHub repository is [tuanmichiganstate/CantusPDF](https://github.com/tuanmichiganstate/CantusPDF).
-
-
-
-## Qt desktop interface
-
-The main app now uses Qt in every workspace, with warm paper colors, serif headings, restrained cross-and-music imagery, and persistent tabs. Installation and launch stay the same: copy **Cantus PDF.app** to Applications and open it. There is no separate fallback app or web server. See [migration checks](docs/QT_PREVIEW.md).
+See [desktop architecture](docs/QT_DESKTOP.md), [UI design](docs/UI_DESIGN.md), and
+[macOS release instructions](docs/MACOS_RELEASE.md). Older implementation history
+is retained in Git rather than mixed into the current usage guide.

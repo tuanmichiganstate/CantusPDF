@@ -8,7 +8,8 @@ pytest.importorskip('PySide6')
 from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl
 from PySide6.QtGui import QDropEvent
 from PySide6.QtWidgets import QApplication
-from preview_cleaner.qt_preview import PrepareWindow
+from preview_cleaner.qt_app import CantusWindow
+from shiboken6 import delete
 from test_core import make_pdf
 
 
@@ -20,13 +21,16 @@ def qt_app():
 @pytest.fixture
 def qt_window(monkeypatch, qt_app):
     app = qt_app
-    window = PrepareWindow()
+    shell = CantusWindow()
+    window = shell.prepare
     errors = []
     monkeypatch.setattr(window, 'error', lambda title, error: errors.append((title, str(error))))
-    window.show()
+    shell.show()
     app.processEvents()
     yield app, window, errors
-    window.close()
+    shell.closing = True
+    shell.close()
+    delete(shell)
     app.processEvents()
 
 
@@ -116,7 +120,7 @@ def test_qt_entrypoint_exits_cleanly(tmp_path):
     root = Path(__file__).resolve().parents[1]
     for attempt in range(3):
         report = tmp_path / f'ready-{attempt}'
-        result = subprocess.run([sys.executable, '-X', 'faulthandler', 'run_qt.py',
+        result = subprocess.run([sys.executable, '-X', 'faulthandler', 'run_app.py',
                                  '--startup-report', str(report), '--exit-after-startup'],
                                 cwd=root, capture_output=True, timeout=20)
         assert result.returncode == 0, result.stderr.decode()

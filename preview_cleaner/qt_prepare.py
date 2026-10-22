@@ -1,14 +1,13 @@
-"""One-screen Qt evaluation app using the existing verified PDF worker."""
+"""Prepare workspace and shared Qt visual components."""
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pymupdf
 from PySide6.QtCore import Qt, QTimer, Signal, QRectF
-from PySide6.QtGui import QAction, QColor, QIcon, QImage, QPainter, QPen, QPixmap, QKeySequence
+from PySide6.QtGui import QAction, QColor, QImage, QPainter, QPen, QPixmap, QKeySequence
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QDialog, QFileDialog, QFrame, QGraphicsScene,
+    QCheckBox, QDialog, QFileDialog, QFrame, QGraphicsScene,
     QGraphicsView, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow,
     QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea,
     QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
@@ -209,7 +208,7 @@ class PrepareWindow(QMainWindow):
         self.path = self.data = self.original = self.output = self.result = self.job = None
         self.password = ''
         self.page = 0
-        self.setWindowTitle('Cantus PDF — Qt Preview')
+        self.setWindowTitle('Cantus PDF')
         self.resize(1280, 850)
         self.setMinimumSize(1000, 740)
         self.setAcceptDrops(True)
@@ -233,9 +232,7 @@ class PrepareWindow(QMainWindow):
         row.addWidget(Emblem(small=True))
         row.addWidget(label('Cantus PDF', 'brand'))
         row.addSpacing(22)
-        row.addWidget(button('Prepare PDF', lambda: None, 'active'))
         row.addStretch()
-        row.addWidget(label('INTERFACE PREVIEW', 'section'))
         row.addSpacing(14)
         row.addWidget(button('About', self.about, 'quiet'))
         row.addWidget(button('Open PDF…', self.choose_file))
@@ -341,7 +338,6 @@ class PrepareWindow(QMainWindow):
         footer.setContentsMargins(22, 10, 22, 10)
         self.status = label('Ready · Processing stays on your Mac', 'muted')
         footer.addWidget(self.status, 1)
-        footer.addWidget(label('Qt preview · Prepare workspace', 'muted'))
         outer.addLayout(footer)
         self.target.textChanged.connect(self.invalidate)
         self.remove.toggled.connect(self.invalidate)
@@ -353,8 +349,8 @@ class PrepareWindow(QMainWindow):
             self.addAction(action)
 
     def about(self):
-        QMessageBox.information(self, 'Cantus PDF — Interface preview',
-            'A working evaluation of the Prepare PDF workspace.\n\nOpen, preview, compare and save use the existing verified PDF engine.\n\nNotes, Service collection, Batch, Join and Split remain in the current Cantus PDF app. This preview is installed separately.')
+        QMessageBox.information(self, 'Cantus PDF',
+            'Prepare, annotate and arrange music PDFs. All processing stays on your Mac.')
 
     def choose_file(self):
         path, _ = QFileDialog.getOpenFileName(self, 'Open PDF', '', 'PDF documents (*.pdf)')
@@ -550,27 +546,3 @@ class PrepareWindow(QMainWindow):
         self.password = ''
         event.accept()
 
-
-def main():
-    app = QApplication(sys.argv)
-    app.setApplicationName('Cantus PDF Preview')
-    app.setStyle('Fusion')
-    app.setStyleSheet(STYLE)
-    base = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent.parent))
-    app.setWindowIcon(QIcon(str(base / 'assets/icon.png')))
-    window = PrepareWindow()
-    window.show()
-    if '--startup-report' in sys.argv:
-        report = Path(sys.argv[sys.argv.index('--startup-report') + 1])
-        def ready():
-            window.repaint()
-            report.write_text('ready')
-            if '--exit-after-startup' in sys.argv:
-                QTimer.singleShot(200, window.close)
-        QTimer.singleShot(0, ready)
-    exit_code = app.exec()
-    # Destroy the QObject tree before Python module cleanup visits signal cycles.
-    from shiboken6 import delete, isValid
-    if isValid(window):
-        delete(window)
-    return exit_code

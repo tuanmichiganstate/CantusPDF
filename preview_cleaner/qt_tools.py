@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QListWidget,
     QListWidgetItem, QComboBox, QLineEdit, QCheckBox, QFileDialog, QMessageBox, QInputDialog,
     QPlainTextEdit, QAbstractItemView)
-from .qt_preview import label, button
+from .qt_prepare import label, button
 from .qt_music import SongList
 from .qt_common import JobRunner, warn, choose_save
 from .core import read_pdf, open_pdf, PasswordNeeded, save_new, CleanerError
