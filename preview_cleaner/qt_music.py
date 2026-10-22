@@ -193,7 +193,18 @@ class MusicWorkspace(QWidget):
         body.addLayout(center, 1)
         self.inspector = QTabWidget()
         self.inspector.setFixedWidth(280)
-        self.song_title, self.section, self.pages = QLineEdit(), QLineEdit(), QLineEdit()
+        self.song_title, self.pages = QLineEdit(), QLineEdit()
+        self.section = QComboBox()
+        self.section.setEditable(True)
+        self.section.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.section.addItems([
+            '', 'Entrance', 'Penitential Act', 'Kyrie', 'Gloria',
+            'Responsorial Psalm', 'Gospel Acclamation', 'Offertory', 'Sanctus',
+            'Memorial Acclamation', 'Great Amen', "Lord’s Prayer", 'Agnus Dei',
+            'Communion', 'Thanksgiving', 'Recessional',
+        ])
+        self.section.lineEdit().setPlaceholderText('Choose or type…')
+        self.section.setToolTip('Choose a liturgical part or type your own.')
         song = QWidget()
         form = QFormLayout(song)
         form.addRow('Song title', self.song_title)
@@ -247,8 +258,9 @@ class MusicWorkspace(QWidget):
         self.status = label('Open a PDF or image, or resume a saved project.', 'muted')
         self.status.setWordWrap(True)
         outer.addWidget(self.status)
-        for field in (self.title, self.song_title, self.section, self.pages):
+        for field in (self.title, self.song_title, self.pages):
             field.textChanged.connect(self.edited)
+        self.section.currentTextChanged.connect(self.edited)
         self.note_text.textChanged.connect(self.edited)
         self.print_note.toggled.connect(self.edited)
         for field in (self.note_size, self.note_width, self.note_height):
@@ -291,7 +303,7 @@ class MusicWorkspace(QWidget):
             if self.track() is not None:
                 track = candidate['tracks'][self.track_index]
                 track['title'] = self.song_title.text().strip() or track['source_name']
-                track['section'] = self.section.text().strip()
+                track['section'] = self.section.currentText().strip()
                 track['pages'] = selected_pages(self.pages.text(), track['count'])
                 if self.note():
                     note = next(n for n in track['notes'] if n['id'] == self.note_id)
@@ -332,9 +344,9 @@ class MusicWorkspace(QWidget):
         self.title.setText(self.model['title'])
         track = self.track()
         for widget, value in ((self.song_title, track['title'] if track else ''),
-                              (self.section, track['section'] if track else ''),
                               (self.pages, page_text(track['pages']) if track else '')):
             widget.setText(value)
+        self.section.setEditText(track['section'] if track else '')
         self.notes.blockSignals(True)
         self.notes.clear()
         for n in track['notes'] if track else []:

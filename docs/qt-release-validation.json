@@ -1,8 +1,8 @@
 {
   "passed": true,
-  "generated_at_utc": "2026-10-22T10:13:24.637127+00:00",
+  "generated_at_utc": "2026-10-22T10:23:39.449228+00:00",
   "platform": "Darwin 26.6.2 arm64",
-  "source_revision": "c1d7c1707cfd20fa93c526692e485042714af8a6",
+  "source_revision": "b4e0a8c0300e070b02499cf50f45c1f9e83a3b90",
   "source_worktree_dirty": true,
   "release_tests": {
     "tests": 175,
@@ -23,7 +23,7 @@
     "Portable projects: reopen after original source files are removed"
   ],
   "archive": "dist/CantusPDF-macOS-arm64.zip",
-  "archive_sha256": "8986d305f79496c3a900238d585de0986fee1fa0d03836bc576161c9577e09cd",
+  "archive_sha256": "2213394b781460ea8b222047c2318b0a7ff86ed0520188ee3d37cd6d9aa71aa3",
   "signature_verified": true,
   "notarized": false,
   "separate_mac_tested": false
