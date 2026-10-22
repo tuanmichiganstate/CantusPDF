@@ -1,0 +1,47 @@
+name: Windows build and installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: requirements-build-windows.txt
+      - name: Test, package, install and verify
+        run: ./scripts/build_windows.ps1
+      - name: Upload verified Windows artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: CantusPDF-Windows-x64
+          path: |
+            dist/CantusPDF-Windows-x64-Setup.exe
+            dist/CantusPDF-Windows-x64.zip
+            dist/CantusPDF-Windows-validation.json
+          if-no-files-found: error
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Windows-diagnostics
+          path: |
+            build/windows/*.json
+            build/windows/*.xml
+            build/windows/*.png
+          if-no-files-found: ignore

@@ -22,7 +22,7 @@ portable `.pcset` format are unchanged.
 The build records current test counts and rejects skipped or failing tests.
 
 Qt workspace tests exercise actual subprocess workers, native interactions, project
-conflicts and image import. The packaged `--self-test <report.json>` performs nine
+conflicts and image import. The packaged `--self-test <report.json>` performs ten
 end-to-end check groups and writes a screenshot beside its JSON report.
 
 Run `bash scripts/build_macos.sh` to run all tests, build the app, verify the
@@ -30,8 +30,8 @@ signature, run its packaged diagnostic and create the archive. The workflow
 refreshes [release evidence](qt-release-validation.json) with the archive hash,
 source revision and dirty state. It does not claim acceptance on a separate Mac.
 
-There is one desktop entry point (`run_app.py`) and one build target
-(`CantusPDF.spec`). Prepare interaction and launch/close tests exercise the main
+There is one desktop entry point (`run_app.py`), with macOS (`CantusPDF.spec`) and
+Windows (`CantusPDFWindows.spec`) build targets. Prepare interaction and launch/close tests exercise the main
 application. `qt_prepare.py` contains the shared views and Prepare workspace;
 `qt_app.py` owns the event loop and window lifetime.
 

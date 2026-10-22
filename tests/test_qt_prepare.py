@@ -129,12 +129,14 @@ def test_qt_entrypoint_exits_cleanly(tmp_path):
 
 def test_rapid_cancellation_after_qt_initialization(qt_window):
     import signal
+    import sys
     from preview_cleaner.jobs import CleaningJob
     app, window, errors = qt_window
     app.processEvents()
     for _ in range(50):
         job = CleaningJob(make_pdf(), 'Preview', '', True)
         job.close()
-        assert job.process.returncode in (0, -signal.SIGTERM, -signal.SIGKILL)
+        expected = (0, 1) if sys.platform == 'win32' else (0, -signal.SIGTERM, -signal.SIGKILL)
+        assert job.process.returncode in expected
         assert not job.folder.exists()
     assert not errors

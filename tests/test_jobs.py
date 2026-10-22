@@ -4,6 +4,29 @@ from preview_cleaner.jobs import CleaningJob
 from test_core import make_pdf
 
 
+def test_windows_frozen_job_uses_hidden_worker_and_redirected_streams(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from preview_cleaner import jobs
+    import pytest
+    calls = []
+    monkeypatch.setattr(jobs, 'sys', SimpleNamespace(
+        platform='win32', frozen=True, executable=str(tmp_path / 'CantusPDF.exe')))
+    monkeypatch.setattr(jobs.subprocess, 'CREATE_NO_WINDOW', 0x08000000, raising=False)
+    def capture(command, **options):
+        calls.append((command, options))
+        raise OSError('Synthetic launch stop')
+    monkeypatch.setattr(jobs.subprocess, 'Popen', capture)
+    with pytest.raises(OSError, match='Synthetic launch stop'):
+        CleaningJob(make_pdf(), 'Preview', 'private-test-password', True)
+    command, options = calls[0]
+    assert command[0] == str(tmp_path / 'CantusPDFWorker.exe')
+    assert command[1] == '--pdf-worker'
+    assert 'private-test-password' not in repr(command)
+    assert options['creationflags'] == 0x08000000
+    assert options['stdin'] == jobs.subprocess.PIPE
+    assert options['stdout'] == options['stderr'] == jobs.subprocess.DEVNULL
+
+
 def finish(job):
     messages = []
     deadline = time.monotonic() + 20
@@ -52,8 +75,11 @@ def test_worker_error_is_reported_and_cleaned_up():
 
 def test_timeout_stops_worker():
     job = CleaningJob(make_pdf(), "Preview", "", True, timeout=0)
-    assert job.poll()[0][0] == "error"
-    assert job.closed and not job.folder.exists()
+    try:
+        assert job.poll()[0][0] == "error"
+        assert job.closed and not job.folder.exists()
+    finally:
+        job.close()
 
 
 def test_crashed_worker_is_detected():
