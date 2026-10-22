@@ -31,7 +31,9 @@ class CleaningJob:
             (self.folder / 'input.pdf').write_bytes(data)
             self.receiver = (self.folder / 'events.jsonl').open('w+b', buffering=0)
             if getattr(sys, 'frozen', False):
-                command = [sys.executable, '--pdf-worker', str(self.folder)]
+                executable = (str(Path(sys.executable).with_name('CantusPDFWorker.exe'))
+                              if sys.platform == 'win32' else sys.executable)
+                command = [executable, '--pdf-worker', str(self.folder)]
             else:
                 command = [sys.executable, '-m', 'preview_cleaner.worker', str(self.folder)]
             environment = os.environ.copy()
@@ -40,6 +42,8 @@ class CleaningJob:
                 environment['PYTHONPATH'] = str(Path(__file__).resolve().parent.parent)
             self.process = subprocess.Popen(
                 command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL if sys.platform == 'win32' else None,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
                 env=environment,
                 # Python 3.12 requires this to use posix_spawn on macOS. Python-opened
                 # descriptors are non-inheritable; no pass_fds/preexec_fn/cwd are used.

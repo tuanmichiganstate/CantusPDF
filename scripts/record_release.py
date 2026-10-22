@@ -9,7 +9,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 
 
-def record(report_path, junit_path, archive_path, *, notarized=False):
+def record(report_path, junit_path, archive_path, *, notarized=False, signature_verified=True):
     diagnostic = json.loads(report_path.read_text())
     if diagnostic.get('passed') is not True:
         raise ValueError('The packaged diagnostic did not pass.')
@@ -34,7 +34,7 @@ def record(report_path, junit_path, archive_path, *, notarized=False):
         'checks': diagnostic['checks'],
         'archive': str(archive_path),
         'archive_sha256': archive_hash,
-        'signature_verified': True,
+        'signature_verified': signature_verified,
         'notarized': notarized,
         'separate_mac_tested': False,
     }

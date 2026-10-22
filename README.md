@@ -2,7 +2,7 @@
 
 Prepare sheet music for the liturgy: create printable PDFs, organize pages, add editable notes, and assemble music for a service. Processing stays on your Mac.
 
-**Status:** tested processing core and a packaged macOS app for Apple Silicon on macOS 26 or later. The app was built and smoke-tested on macOS 26.6.2. Windows packaging and testing on other Macs remain to be done.
+**Status:** tested processing core and a packaged macOS app for Apple Silicon on macOS 26 or later. The app was built and smoke-tested on macOS 26.6.2. A Windows installer/portable build workflow is available; native Windows 11 acceptance and testing on other Macs remain to be done.
 
 The desktop app uses Qt throughout: Prepare PDF, PDF notes, Service collection, page editing, Batch, Join and Split. Open the app normally; no terminal or separate runtime installation is needed. Close or Esc returns from expanded page previews.
 
@@ -49,6 +49,10 @@ python -m preview_cleaner
 Qt is installed with the source dependencies. The CLI does not initialize the desktop UI.
 
 ## Run on Windows
+
+The Windows build provides a per-user installer and a portable ZIP, both with all runtime dependencies included. See [Windows release instructions](docs/WINDOWS_RELEASE.md) and the repository’s **Windows build and installer** Actions workflow.
+
+To run from source:
 
 Open PowerShell in the extracted project folder:
 
@@ -125,14 +129,7 @@ See `docs/validation.json` for the exact execution environment and scope. This d
 
 PyMuPDF is available under AGPL and commercial licensing. Before distributing a closed-source application, review those terms or choose another PDF backend. pypdf and Qt/PySide have their own licenses. The generated macOS app bundles runtime dependencies; PyMuPDF and pypdf package metadata and licenses are included. Source installations may use newer dependency versions than the recorded test environment; rerun the tests after installation.
 
-The macOS build recipe is documented above. For a future Windows build, a candidate command after validating on Windows is:
-
-```bash
-python -m pip install pyinstaller
-python -m PyInstaller --windowed --onedir --name CantusPDF run_app.py
-```
-
-Build Windows packages on Windows; that build has not been tested. Developer ID signing and notarization are not included in the macOS recipe.
+The macOS build recipe is documented above. Windows packages are built and tested on Windows using `scripts/build_windows.ps1`. See [the Windows release procedure](docs/WINDOWS_RELEASE.md).
 
 The local app includes a custom icon sourced from `assets/icon.svg`. See [the macOS release procedure](docs/MACOS_RELEASE.md) for the prepared Developer ID signing/notarization script, the built-in `--self-test` diagnostic, and the clean-Mac acceptance checklist. The current local build remains ad-hoc signed until those external steps are completed.
 
@@ -195,8 +192,8 @@ images or rendered annotation appearances. Processing stays local.
 ## Development and releases
 
 `run_app.py` is the sole desktop bundle entry point. `qt_app.py` owns the application;
-`qt_prepare.py` supplies the Prepare workspace and shared visual components. There
-is one macOS app target, `CantusPDF.spec`.
+`qt_prepare.py` supplies the Prepare workspace and shared visual components. The
+macOS target is `CantusPDF.spec`; Windows uses `CantusPDFWindows.spec`.
 
 `build/`, `dist/`, `.venv-build/` and `tmp/` are local generated folders excluded
 from Git. `assets/icon.svg` is the editable icon source; the PNG and ICNS are

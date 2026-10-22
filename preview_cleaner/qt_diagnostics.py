@@ -38,7 +38,7 @@ def run(report_path):
 
     try:
         with tempfile.TemporaryDirectory(prefix='cantus-qt-diagnostic-') as directory:
-            root=Path(directory);source=root/'score.pdf'
+            root=Path(directory)/'Ca đoàn';root.mkdir();source=root/'score.pdf'
             with pymupdf.open() as doc:
                 for index in range(3):
                     page=doc.new_page();page.insert_text((50,50),f'Choir score {index+1}')
@@ -54,6 +54,19 @@ def run(report_path):
             checks.append('Prepare: verified overlay removal, printable export and source preservation')
             shell.prepare.process();shell.prepare.cancel();assert shell.prepare.job is None
             checks.append('Prepare: worker cancellation')
+            locked=root/'protected.pdf'
+            with pymupdf.open(stream=original,filetype='pdf') as doc:
+                doc.save(locked,encryption=pymupdf.PDF_ENCRYPT_AES_256,
+                         owner_pw='owner-test',user_pw='choir-secret',permissions=0)
+            assert shell.prepare.load_path(locked,password='choir-secret')
+            shell.prepare.process();settle()
+            assert shell.prepare.result.report['removed_count']==3
+            shell.prepare.save_to(root/'unlocked.pdf')
+            with pymupdf.open(root/'unlocked.pdf') as doc:
+                assert not doc.needs_pass
+                assert doc.permissions & pymupdf.PDF_PERM_PRINT_HQ
+            assert shell.prepare.load_path(source)
+            checks.append('Packaged worker: password over stdin, printable export and Unicode paths')
             notes=shell.music_for('practice');notes.add_paths([str(source)]);settle()
             notes.place_note();notes.page_click(.1,.2);settle()
             notes.note_text.setPlainText('Kinh Lạy Cha');assert notes.commit();notes.render();settle()
