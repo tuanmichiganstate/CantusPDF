@@ -75,8 +75,11 @@ def test_worker_error_is_reported_and_cleaned_up():
 
 def test_timeout_stops_worker():
     job = CleaningJob(make_pdf(), "Preview", "", True, timeout=0)
-    assert job.poll()[0][0] == "error"
-    assert job.closed and not job.folder.exists()
+    try:
+        assert job.poll()[0][0] == "error"
+        assert job.closed and not job.folder.exists()
+    finally:
+        job.close()
 
 
 def test_crashed_worker_is_detected():

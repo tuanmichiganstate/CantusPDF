@@ -63,7 +63,7 @@ class CleaningJob:
     def poll(self):
         if self.closed:
             return []
-        if monotonic() - self.started > self.timeout:
+        if monotonic() - self.started >= self.timeout:
             self.close()
             return [('error', 'Processing exceeded five minutes. Try a smaller PDF.')]
         messages = []
