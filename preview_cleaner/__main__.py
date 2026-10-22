@@ -21,7 +21,7 @@ def main() -> int:
     if args.input is None:
         if args.output or args.inspect or args.report or args.print_only:
             parser.error("An input path is required for command-line operations.")
-        from .gui import main as gui_main
+        from .qt_app import main as gui_main
         gui_main()
         return 0
     if not args.inspect and args.output is None:

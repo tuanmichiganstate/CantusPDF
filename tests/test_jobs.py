@@ -67,22 +67,6 @@ def test_crashed_worker_is_detected():
         job.close()
 
 
-def test_rapid_cancellation_after_tk_initialization():
-    import signal
-    from tkinterdnd2 import TkinterDnD
-    root = TkinterDnD.Tk()
-    root.withdraw()
-    root.update()
-    try:
-        for _ in range(50):
-            job = CleaningJob(make_pdf(), 'Preview', '', True)
-            job.close()
-            assert job.process.returncode in (0, -signal.SIGTERM, -signal.SIGKILL)
-            assert not job.folder.exists()
-    finally:
-        root.destroy()
-
-
 def test_worker_password_never_in_command_arguments():
     from preview_cleaner.core import open_pdf
     import pymupdf

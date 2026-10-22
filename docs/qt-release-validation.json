@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "checks": [
+    "Prepare: verified overlay removal, printable export and source preservation",
+    "Prepare: worker cancellation",
+    "PDF notes: editable Vietnamese notes and project save",
+    "PDF notes: private-note exclusion and project reopen",
+    "Service collection: song ordering, crop/rotation and undo",
+    "Final layout: cover, contents, odd starts and explicit quality approval",
+    "Join / Split: independent workspaces and verified exports",
+    "Batch: sequential packaged workers and no-overwrite filenames",
+    "Portable projects: reopen after original source files are removed"
+  ],
+  "date": "2026-10-22",
+  "platform": "macOS 26.6.2 arm64",
+  "release_tests": {
+    "backend_passed": 159,
+    "qt_passed": 13,
+    "total_passed": 172,
+    "skipped": 0
+  },
+  "existing_regression_tests_before_migration": 213,
+  "source_open_close_cycles_passed": 10,
+  "signature": "ad-hoc; codesign --verify --deep --strict passed",
+  "archive_sha256": "02eeed06f03b6644e9ebc75c4b695313e9b1920a2b263a085e4d09b76bc30bad",
+  "separate_mac_tested": false,
+  "notarized": false,
+  "cleanup": "Retired GUI modules, tests, benchmark and obsolete validation removed; all relative imports resolve."
+}

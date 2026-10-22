@@ -1,7 +1,7 @@
 # macOS release procedure
 
 The local build is for Apple Silicon on macOS 26 or later. Its app icon, Python,
-Tcl/Tk, tkdnd, and PDF libraries are included. No Python installation is required
+Qt/PySide and PDF libraries are included. No Python installation is required
 on the destination Mac. Developer ID signing and notarization are optional for
 local development but required for the intended public distribution workflow.
 
@@ -48,10 +48,10 @@ First run the built-in offline diagnostic (choose a new report filename):
 "/Applications/Cantus PDF.app/Contents/MacOS/CantusPDF" --self-test "$HOME/Desktop/CantusPDF-check.json"
 ```
 
-The resulting JSON must contain `"passed": true`. This exercises native tkdnd
-loading, a spawned worker, password handling, PDF rendering, always-on printing,
-and cancellation, without using real documents. It does not substitute for the
-Finder gesture and Gatekeeper checks below.
+The resulting JSON must contain `"passed": true`. This exercises Qt workspaces,
+spawned workers, rendering, printable export, cancellation, editable/private notes,
+portable projects, page editing, export layout, Batch and Join/Split. It does not
+substitute for Finder gesture and Gatekeeper checks below.
 
 - Record macOS version, architecture, archive SHA-256, and app version.
 - Transfer the final archive normally, extract it, copy the app to Applications,
@@ -65,10 +65,10 @@ Finder gesture and Gatekeeper checks below.
   copies allow high-quality printing. Do not submit a physical print job unless wanted.
 - Analyze a larger synthetic PDF, move the window during processing, cancel,
   restart, change options during processing, and close the app during a job.
-- Reject folders and multi-file drops; refuse overwriting an existing output.
+- Reject folders; route multi-file drops to Batch; refuse overwriting an existing output.
 - Test unsupported, malformed, and signature-field fixtures without losing the original.
 - Repeat offline after the notarization ticket is stapled.
 
-Record actual results and failures in `docs/macos-build-validation.json`. Do not
+Record actual results and failures in `docs/qt-release-validation.json`. Do not
 mark Developer ID signing, notarization, or clean-Mac acceptance complete based
 on the local ad-hoc build.

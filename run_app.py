@@ -6,7 +6,7 @@ if __name__ == "__main__":
         from preview_cleaner.worker import run
         raise SystemExit(run(sys.argv[2]))
     if len(sys.argv) == 3 and sys.argv[1] == "--self-test":
-        from preview_cleaner.diagnostics import run
+        from preview_cleaner.qt_diagnostics import run
         raise SystemExit(run(sys.argv[2]))
-    from preview_cleaner.gui import main
-    main()
+    from preview_cleaner.qt_app import main
+    raise SystemExit(main())

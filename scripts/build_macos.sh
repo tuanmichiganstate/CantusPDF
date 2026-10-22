@@ -8,10 +8,6 @@ if [[ "$(uname -s)" != Darwin || "$(uname -m)" != arm64 ]]; then
 fi
 
 BUILD_PYTHON="${BUILD_PYTHON:-python3}"
-"$BUILD_PYTHON" -c 'import tkinter; import _tkinter' || {
-    echo "Python needs Tkinter. For Homebrew Python 3.12: brew install python-tk@3.12" >&2
-    exit 1
-}
 "$BUILD_PYTHON" -m venv .venv-build
 .venv-build/bin/python -m pip install -r requirements-build-macos.txt
 .venv-build/bin/python -m pytest -q

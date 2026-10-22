@@ -1,4 +1,4 @@
-"""Headless worker entry point. Never import or initialize Tk in this process."""
+"""Headless worker entry point. Never initialize a graphical UI in this process."""
 import json
 import os
 from pathlib import Path

@@ -1,0 +1,3 @@
+# Dependencies for the standalone Prepare workspace development preview.
+-r requirements.txt
+PySide6-Essentials==6.12.0

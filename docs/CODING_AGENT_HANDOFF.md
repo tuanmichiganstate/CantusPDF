@@ -6,7 +6,7 @@ Turn the supplied working source prototype into a reliable local macOS/Windows d
 
 ## Implemented baseline
 
-`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `gui.py` provides drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize Tk in worker.py. `__main__.py` is the CLI. The suite includes 213 automated cases and a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
+`preview_cleaner/core.py` reads PDFs, inspects rendered text spans, parses top-level PDF text objects, applies byte-offset patches, enables printing, and verifies exported output. `qt_app.py` and `qt_preview.py` provide drag-and-drop, preview/navigation/export and JSON reporting; `jobs.py` launches `worker.py` in a fresh headless subprocess. On macOS, Popen uses posix_spawn (close_fds=False; all app-opened descriptors are non-inheritable) to avoid inherited Cocoa state. Do not reintroduce multiprocessing fork_exec startup or initialize a graphical UI in worker.py. `__main__.py` is the CLI. The suite covers the PDF backend and Qt workspaces with a synthetic multi-producer corpus. The frozen app has an offline `--self-test` diagnostic.
 
 The reference sample is a 12-page PDF whose page wrapper separately invokes the score Form XObject, draws a 150-pt diagonal `Preview` text object, then draws its edition footer. Only the target text-show operand is changed. Do not remove the entire page stream, Form XObject, font resource, gray content, or watermark bounding rectangle.
 
@@ -43,42 +43,42 @@ The offset parser uses `pypdf.generic.read_object`, not a raw global regex. Unre
 
 Text fingerprint validation protects text content and position, but is not proof of arbitrary graphics equivalence for every PDF. Maintain independent stream checks and add rendered-diff tests with known allowable change masks. The original-sample validation is evidence for that sample, not universal correctness.
 
-The UI uses Tkinter/tkdnd. Cleaning and verification run in a spawned worker process with progress, cancellation, timeout, and private temporary files. File opening and per-page rendering remain synchronous. A PySide6 UI is a possible later substitution, not required to prove the removal algorithm. The macOS packaging and optional signing/notarization workflow are documented in MACOS_RELEASE.md; external signing credentials and clean-Mac acceptance are still required for distribution validation.
+The UI uses PySide6 Essentials. `qt_app.py` owns persistent workspace tabs, shared processing gates and application lifetime. Cleaning and verification run in headless subprocesses with progress, cancellation, timeouts and private temporary files. Music preview/save/export operations also use workers. The macOS packaging and signing workflow is documented in MACOS_RELEASE.md; separate-Mac acceptance remains required for public distribution.
 
 ## Release gates
 
 Core regression suite passes; native Mac/Windows UI acceptance passes; supported fixtures have only expected visual changes; unsupported fixtures remain unchanged; no-overwrite and password/signature tests pass; packaging tested on clean machines; dependency license review completed; usage limitations are visible in the app.
 
-Mac viewer mitigation in 0.7.3: Expand maximizes a normal Toplevel after mapping instead of entering a native fullscreen Space. Avoid reintroducing immediate destruction of native fullscreen viewers; the reported Tk bitmap-context crash occurred during asynchronous fullscreen exit. See UI_DESIGN.md for scope and remaining native-fullscreen acceptance.
+Expanded previews use maximized Qt dialogs. The application explicitly deletes the QObject window tree after the event loop exits to avoid shutdown ordering crashes. Preserve this lifecycle and the launch/close checks.
 
-Batch export in 0.8.0 is implemented in batch.py. Multi-file drops and selection open a separate queue. It snapshots shared options, uses one CleaningJob at a time, prompts for passwords per file, continues after failures and saves uniquely named copies through save_new. Cancellation keeps completed exports and marks remaining rows cancelled. Batch exports save directly; single-document comparison remains available for preview-before-save.
+Batch export in 0.8.0 is implemented in qt_tools.py. Multi-file drops and selection open a separate queue. It snapshots shared options, uses one CleaningJob at a time, prompts for passwords per file, continues after failures and saves uniquely named copies through save_new. Cancellation keeps completed exports and marks remaining rows cancelled. Batch exports save directly; single-document comparison remains available for preview-before-save.
 
 ### 0.10.0 inline inspector
 
-`preview_cleaner/inspector.py` shares read-only document/security fields and a collapsible pane between comparison and batch. Batch reads metadata on selection without password prompts and refreshes cached fields after authentication. Do not store or display passwords. Compact security-removal disclosures remain visible when the pane is closed. Dark mode is deferred. Full suite: 99 passed; packaged diagnostics passed, including inspector, batch, worker and viewer lifecycle checks.
+Read-only PDF/security details live in `qt_app.py`; Batch controls live in `qt_tools.py`. Do not store or display passwords. Compact security-removal disclosures remain visible.
 
 ### 0.11.0 independent page tools
 
-Tools → Join / Split opens independent windows. `assembly.py` owns strict preflight, range parsing, page copying, bookmark/label remapping, per-page text/geometry/render checks and atomic no-overwrite publication. `assembly_jobs.py` uses the existing spawn lifecycle; `page_tools.py` owns the two workspaces. These tools never call `clean()` or remove encryption/printing restrictions. They reject encrypted, signed and unsupported document-level structures. The 100 MB / 300-page limits apply per source and to Join totals.
+Tools → Join / Split opens independent windows. `assembly.py` owns strict preflight, range parsing, page copying, bookmark/label remapping, per-page text/geometry/render checks and atomic no-overwrite publication. `assembly_jobs.py` uses the existing spawn lifecycle; `qt_tools.py` owns the two workspaces. These tools never call `clean()` or remove encryption/printing restrictions. They reject encrypted, signed and unsupported document-level structures. The 100 MB / 300-page limits apply per source and to Join totals.
 
 Worker publication uses an exclusively created destination-side staging file and atomic hard-link creation. Private receipts record completed outputs; cancellation recovers a committed output even if interrupted between link creation and receipt emission. Never remove completed outputs during cleanup. Main, Batch and page tools share a processing gate. Input hashes are checked again before export. Synthetic tests cover multiple producers, annotations, links, labels/bookmarks, source changes, name collisions, disk errors, worker failure and cancellation. Native Finder gesture acceptance remains pending; source routing and frozen workflows are covered automatically.
 
 ### 0.12.0 flexible music workspaces
-`music_library.py` owns immutable content-addressed PDF snapshots, bounded/hash-validated portable `.pcset` ZIPs, note extraction/creation and verified PDF export. `music_workspace.py` shares a native editor between practice notes and service collections. All library operations dispatch through the existing headless worker and AssemblyJob lifecycle. Never modify a source practice file or auto-clean on import.
+`music_library.py` owns immutable content-addressed PDF snapshots, bounded/hash-validated portable `.pcset` ZIPs, note extraction/creation and verified PDF export. `qt_music.py` shares a native editor between practice notes and service collections. All library operations dispatch through the existing headless worker and AssemblyJob lifecycle. Never modify a source practice file or auto-clean on import.
 
 Managed FreeText annotation subjects use `PreviewCleanerNote:1:` metadata. Note rectangles use normalized displayed-page coordinates; convert through derotation for PDF annotations. Richtext supports Vietnamese and Story preflight rejects overflow. Print is the user-confirmed default; unchecked notes are project-only, entirely absent from exported PDFs. Foreign annotations are preserved. Song notes imported into a collection become local copies; there is no implicit write-back.
 
 Project Save checks the previously loaded hash before atomic replacement; Save As and PDF exports use collision-safe publication. ZIP members and content hashes are validated without extractall. Tests cover rotated/cropped pages, note removal restoring original pixels, source immutability, project portability, conflicting saves, malformed archives, unsaved changes, Undo, workspace routing and packaged workers. Full suite: 171 passed. Signing/clean-Mac and native Finder/row-note drag acceptance remain separate gates.
 
 ### 0.13.0 page organization and print layout
-`pdf_layout.py` validates and maps reversible page geometry, computes front matter/odd-page offsets, inserts Unicode cover/contents and non-overlapping numbers. `music_dialogs.py` implements shared modal page organizer, export options and final-output preview using the workspace's worker boundary. `music_library.py` applies geometry after notes, verifies copied song pages before intentional layout changes, checks flattening appearance and verifies final serialization. Do not flatten the stored asset or project notes. Optimized serialization never downsamples or exceeds the baseline serialization size.
+`pdf_layout.py` validates and maps reversible page geometry, computes front matter/odd-page offsets, inserts Unicode cover/contents and non-overlapping numbers. `qt_music_dialogs.py` implements shared modal page organizer, export options and final-output preview using the workspace's worker boundary. `music_library.py` applies geometry after notes, verifies copied song pages before intentional layout changes, checks flattening appearance and verifies final serialization. Do not flatten the stored asset or project notes. Optimized serialization never downsamples or exceeds the baseline serialization size.
 
 Project v2 records `page_edits` (original displayed normalized crop edges plus clockwise rotation) and `export_options`; v1 is upgraded on load. Note rectangles remain in original displayed normalized space, with optional relative text rotation. Map through crop/rotation for editor interaction. PNG/JPEG headers are checked before decoding for the 40 MP limit; conversion runs in the worker. PyMuPDF 1.28.2 image_profile has a bytes-wrapper error, so bounded standard-header parsing avoids relying on it or adding Pillow.
 
 Numbering refuses nonblank target regions instead of covering score content. Contents destinations always reference physical PDF pages. Flattening is an explicit print-copy option for all annotations; private notes remain excluded. Clean-Mac/signing and actual native Finder/row/note-drag acceptance remain separate.
 
 ### 0.14.0 Stitch UI refinement
-Song/Notes inspector tabs share existing model/edit handlers. Note box dimensions are collapsed; focus reveals fields inside each independent scroll panel. Selected/placed notes switch to Notes. Secondary Save As/Reveal actions live under More. ExportDialog groups existing options with contextual disabled numbering fields; disabled invalid drafts must not block unrelated exports. Its summary uses layout_plan without PDF work. Page organizer has explicit Keep/Omit plus keyboard alternatives; omission remains reversible. No PDF processing semantics changed. See UI_DESIGN.md for Stitch provenance and excluded invented features.
+Song/Notes inspector tabs share existing model/edit handlers. Note box dimensions are collapsed; focus reveals fields inside each independent scroll panel. Selected/placed notes switch to Notes. Secondary Save As/Reveal actions live under More. ExportLayout groups existing options with contextual disabled numbering fields; disabled invalid drafts must not block unrelated exports. Its summary uses layout_plan without PDF work. Page organizer has explicit Keep/Omit plus keyboard alternatives; omission remains reversible. No PDF processing semantics changed. See UI_DESIGN.md for Stitch provenance and excluded invented features.
 
 
 ### 0.15.0 visual crop and reviewed image reduction
@@ -104,7 +104,7 @@ unavailable (HTTP 503); see UI_DESIGN for accurate provenance.
 
 
 ### 0.18.0 visual page grid
-`page_grid.py` owns bounded thumbnail-card rendering, multi-selection, keyboard
+`qt_music_dialogs.py` owns bounded thumbnail-card rendering, multi-selection, keyboard
 navigation and pointer reorder/Keep/Restore callbacks. PageOrganizer retains its
 draft model and processing handlers. `library_thumbnails(uncropped=True)` removes
 project crop but retains rotation for the image; normalized crop overlays map through
@@ -114,7 +114,7 @@ The inspector scrolls to focused fields and Apply remains in a reserved footer.
 
 ## Persistent main workspaces
 
-CleanerWindow owns a three-tab Notebook. MusicWorkspace.window is now a Frame inside a persistent tab, not a Toplevel. Keep document models/workers alive across tab changes. Dialogs and file choosers use winfo_toplevel() for ownership. Root Open/Save/Escape bindings route through workspace_shortcut; avoid reintroducing workspace-level toplevel bindings. GUI tests must deiconify the root when verifying music workspace geometry/focus.
+CantusWindow owns a three-tab QTabWidget. MusicWorkspace is a persistent QWidget. Keep models alive across tab changes. Parent dialogs to the application window and route Open/Save/Escape through the selected workspace. Use QApplication event processing in native interaction tests.
 
 ## Product identity
 

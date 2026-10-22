@@ -4,7 +4,7 @@ Prepare sheet music for the liturgy: create printable PDFs, organize pages, add 
 
 **Status:** tested processing core and a packaged macOS app for Apple Silicon on macOS 26 or later. The app was built and smoke-tested on macOS 26.6.2. Windows packaging and testing on other Macs remain to be done.
 
-On macOS, the expanded page viewer uses a maximized window to avoid a Tk crash during native fullscreen exit. Close or Esc returns to the comparison.
+The desktop app uses Qt throughout: Prepare PDF, PDF notes, Service collection, page editing, Batch, Join and Split. Open the app normally; no terminal or separate runtime installation is needed. Close or Esc returns from expanded page previews.
 
 ## What is included
 
@@ -27,17 +27,17 @@ All document processing is local. No API key, AI model, OCR engine, subscription
 
 Open `dist/Cantus PDF.app`, or copy it to Applications first. The app includes Python and its runtime dependencies. `dist/CantusPDF-macOS-arm64.zip` contains the same app for convenient copying. This local build is ad-hoc signed, not Developer ID signed or notarized.
 
-To rebuild on this Apple Silicon Mac with Python 3.12 and Tkinter:
+To rebuild on this Apple Silicon Mac with Python 3.12:
 
 ```bash
 bash scripts/build_macos.sh
 ```
 
-The build recipe uses `requirements-build-macos.txt` and `CantusPDF.spec`, runs the tests, verifies the bundle signature, and creates the ZIP. It replaces generated files in `build/` and `dist/`; quit the app before rebuilding. The macOS 26 minimum reflects the bundled Tcl/Tk libraries.
+The build recipe uses `requirements-build-macos.txt` and `CantusPDF.spec`, runs the tests, verifies the bundle signature, and creates the ZIP. It replaces generated files in `build/` and `dist/`; quit the app before rebuilding. This build has been tested on macOS 26.6.2; earlier supported macOS versions still need acceptance testing.
 
 To run directly from source instead:
 
-Use a supported Python 3 installation with Tkinter. Python 3.11 or 3.12 is a reasonable starting point; the test environment was Python 3.13.5. Open Terminal in this extracted project folder:
+Use Python 3.12. Open Terminal in this extracted project folder:
 
 ```bash
 python3 -m venv .venv
@@ -46,7 +46,7 @@ python -m pip install -r requirements.txt
 python -m preview_cleaner
 ```
 
-Check Tkinter separately with `python -m tkinter`. An installation without Tkinter needs its matching Tcl/Tk support; alternatively use a Python installer that includes Tkinter. The CLI does not need Tkinter.
+Qt is installed with the source dependencies. The CLI does not initialize the desktop UI.
 
 ## Run on Windows
 
@@ -110,10 +110,10 @@ Limits: 100 MB file, 300 pages, 4 MB combined top-level page content. Desktop cl
 
 ```bash
 python -m pip install -r requirements-dev.txt
-python -m pytest -q
+bash scripts/build_macos.sh
 ```
 
-The current suite passes 143 automated tests on macOS. Tests cover supported encodings, non-target text, phrases, ambiguity, mixed text objects, inline images, comments, clipping mode, nested forms, raster pages, password handling, signatures, no-overwrite behavior, repeat processing, printable copies, dropped-path handling, worker crashes/timeouts/cancellation, and the Tk event loop. The GUI tests require a graphical desktop with Tkinter. Print-only regression fixtures verify unchanged content streams and rendered pixels with AES-128/AES-256 security and both blocked and low-quality-only printing.
+The current suite passes 172 tests covering the PDF backend and Qt interface, including 50 rapid worker cancellations after UI initialization. Run `python -m pytest -q` for all tests. GUI tests require a graphical desktop. The packaged offline diagnostic checks complete export workflows.
 
 `tests/fixtures` contains only synthetic PDFs from ReportLab, fpdf2, and PyMuPDF, plus a malformed file. Supported fixtures are checked for unchanged graphics and exact rendered pixels outside the removed label. Unsupported fixtures must remain byte-identical. To regenerate the corpus, install `requirements-fixtures.txt` and run `python scripts/generate_fixtures.py`; fixture-generator dependencies are not bundled into the app.
 
@@ -123,7 +123,7 @@ See `docs/validation.json` for the exact execution environment and scope. This d
 
 ## Dependency / distribution note
 
-PyMuPDF is available under AGPL and commercial licensing. Before distributing a closed-source application, review those terms or choose another PDF backend. pypdf and Tcl/Tk have their own licenses. The generated macOS app bundles runtime dependencies; PyMuPDF and pypdf package metadata and licenses are included. Source installations may use newer dependency versions than the recorded test environment; rerun the tests after installation.
+PyMuPDF is available under AGPL and commercial licensing. Before distributing a closed-source application, review those terms or choose another PDF backend. pypdf and Qt/PySide have their own licenses. The generated macOS app bundles runtime dependencies; PyMuPDF and pypdf package metadata and licenses are included. Source installations may use newer dependency versions than the recorded test environment; rerun the tests after installation.
 
 The macOS build recipe is documented above. For a future Windows build, a candidate command after validating on Windows is:
 
@@ -142,7 +142,7 @@ The local app includes a custom icon sourced from `assets/icon.svg`. See [the ma
 - PyMuPDF document/save APIs: https://pymupdf.readthedocs.io/en/latest/document.html
 - PyMuPDF licensing: https://pymupdf.readthedocs.io/en/latest/about.html#license-and-copyright
 - pypdf generic objects: https://pypdf.readthedocs.io/en/stable/modules/generic.html
-- Tkinter: https://docs.python.org/3/library/tkinter.html
+- Qt for Python: https://doc.qt.io/qtforpython-6/
 - PyInstaller platform/build model: https://pyinstaller.org/en/stable/operating-mode.html
 
 ## Interface
@@ -270,3 +270,9 @@ Prepare PDF, PDF notes, and Service collection are now persistent tabs in one ma
 ### Cantus PDF naming (0.19.0)
 
 The app is now **Cantus PDF** (formerly Preview Cleaner). Existing `.pcset` projects and managed PDF annotations remain compatible. The internal Python module, project format, annotation identifiers, and bundle identifier are retained for continuity. The GitHub repository is [tuanmichiganstate/CantusPDF](https://github.com/tuanmichiganstate/CantusPDF).
+
+
+
+## Qt desktop interface
+
+The main app now uses Qt in every workspace, with warm paper colors, serif headings, restrained cross-and-music imagery, and persistent tabs. Installation and launch stay the same: copy **Cantus PDF.app** to Applications and open it. There is no separate fallback app or web server. See [migration checks](docs/QT_PREVIEW.md).

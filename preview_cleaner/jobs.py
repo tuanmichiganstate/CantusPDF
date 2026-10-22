@@ -43,7 +43,7 @@ class CleaningJob:
                 env=environment,
                 # Python 3.12 requires this to use posix_spawn on macOS. Python-opened
                 # descriptors are non-inheritable; no pass_fds/preexec_fn/cwd are used.
-                # Avoid forked Cocoa state and inherited Tk signal-handler execution.
+                # Avoid forked Cocoa state and inherited graphical signal handlers.
                 close_fds=sys.platform != 'darwin',
             )
             try:
